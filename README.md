@@ -1,3 +1,7 @@
+# Note
+
+This is a fork of `gorriecoe/silverstripe-linkfield`. Use at your own risk.
+
 # Silverstripe linkfield
 
 Adds a Linkfield for [gorriecoe/silverstripe-link](https://github.com/gorriecoe/silverstripe-link)

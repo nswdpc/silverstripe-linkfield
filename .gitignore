@@ -13,3 +13,6 @@ web.config
 prepros.cfg
 node_modules
 vendor
+/composer.lock
+/vendor/
+/public/
