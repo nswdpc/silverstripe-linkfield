@@ -85,26 +85,34 @@ class HasOneLinkField extends HasOneButtonField
      * {@inheritdoc}
      * @see \SilverStripe\Forms\FormField::validate()
      */
-    public function validate($validator)
+    public function validate(): \SilverStripe\Core\Validation\ValidationResult
     {
-        $valid = parent::validate($validator);
+        $validationResult = parent::validate();
+        $valid = $validationResult->isValid();
         if ($valid) {
-            $result = $this->getRecord()->validate();
-            $valid = $result->isValid();
-            foreach ($result->getMessages() as $message) {
-                $validator->validationError($this->getName(), $message);
+            $recordValidationResult = $this->getRecord()->validate();
+            $valid = $recordValidationResult->isValid();
+            foreach ($recordValidationResult->getMessages() as $message) {
+                $messageString = (string) $message['message'] ?? '';
+                $validationResult->addFieldError(
+                    $this->getName(),
+                    $messageString,
+                    $message['messageType'] ?? ValidationResult::TYPE_ERROR,
+                    '',
+                    $message['messageCast'] ?? ValidationResult::CAST_TEXT,
+                );
             }
         }
-        if ($valid && $validator->fieldIsRequired($this->getName()) && !$this->getRecord()->Type) {
+        if ($valid && $this->Required() && !$this->getRecord()->Type) {
             $valid = false;
 
             $errorMessage = _t('SilverStripe\\Forms\\Form.FIELDISREQUIRED', '{name} is required', [
                 'name' => strip_tags('"' . ($this->Title() ?: $this->getName()) . '"'),
             ]);
 
-            $validator->validationError($this->getName(), $errorMessage, 'required');
+            $validationResult->addFieldError($this->getName(), $errorMessage, ValidationResult::TYPE_ERROR);
         }
-        return $valid;
+        return $validationResult;
     }
 
     /**

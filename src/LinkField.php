@@ -266,9 +266,8 @@ class LinkField extends FormField
         return $this->linkConfig;
     }
 
-    public function validate($validator)
+    public function validate(): \SilverStripe\Core\Validation\ValidationResult
     {
-        $valid = $this->Field()->validate($validator);
-        return $valid;
+        return $this->Field()->validate();
     }
 }
