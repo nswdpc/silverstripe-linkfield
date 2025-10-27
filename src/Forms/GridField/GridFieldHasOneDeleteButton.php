@@ -14,34 +14,24 @@ class GridFieldHasOneDeleteButton implements GridField_HTMLProvider, GridField_A
 {
 
     /**
-     * Fragment to write the button to
-     */
-    protected string $targetFragment;
-
-    /**
      * GridFieldHasOneUnlinkButton constructor.
-     * @param string $targetFragment
      */
-    public function __construct($targetFragment = 'buttons-before-right')
+    public function __construct(protected string $targetFragment = 'buttons-before-right')
     {
-        $this->targetFragment = $targetFragment;
     }
 
     /**
      * Get fragment to write the button to
      */
-    public function getTargetFragment()
+    public function getTargetFragment(): string
     {
         return $this->targetFragment;
     }
 
     /**
      * Set fragment to write the button to
-     *
-     * @param string $targetFragment
-     * @return static
      */
-    public function setTargetFragment($targetFragment)
+    public function setTargetFragment(string $targetFragment): static
     {
         $this->targetFragment = $targetFragment;
         return $this;
@@ -78,7 +68,7 @@ class GridFieldHasOneDeleteButton implements GridField_HTMLProvider, GridField_A
 
         if (!$item->canDelete()) {
             throw ValidationException::create(
-                _t(__CLASS__ . '.EditPermissionsFailure', 'No delete permissions')
+                _t(self::class . '.EditPermissionsFailure', 'No delete permissions')
             );
         }
 
@@ -88,7 +78,7 @@ class GridFieldHasOneDeleteButton implements GridField_HTMLProvider, GridField_A
 
         Controller::curr()->getResponse()->setStatusCode(
             200,
-            _t(__CLASS__ . '.Deleted', 'Deleted')
+            _t(self::class . '.Deleted', 'Deleted')
         );
     }
 
@@ -102,7 +92,7 @@ class GridFieldHasOneDeleteButton implements GridField_HTMLProvider, GridField_A
         $field = GridField_FormAction::create(
             $gridField,
             'gridfield_deleterelation',
-            _t(__CLASS__ . '.Delete', 'Delete'),
+            _t(self::class . '.Delete', 'Delete'),
             'deleterelation',
             ['deleterelation']
         );
