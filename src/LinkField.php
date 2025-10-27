@@ -17,12 +17,16 @@ use SilverStripe\Forms\GridField\GridFieldEditButton;
 use SilverStripe\Forms\GridField\GridFieldDeleteAction;
 use SilverStripe\Forms\GridField\GridFieldDataColumns;
 use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Control\HTTPResponse;
+use SilverStripe\Control\HTTPResponse_Exception;
+use SilverStripe\Control\RequestHandler;
+use SilverStripe\ORM\DataObject;
 use Symbiote\GridFieldExtensions\GridFieldOrderableRows;
 use SilverShop\HasOneField\HasOneButtonField;
 
 /**
  * LinkField
- *
+ *s
  * @package silverstripe-linkfield
  */
 class LinkField extends FormField
@@ -91,12 +95,10 @@ class LinkField extends FormField
 
     /**
      * @param array $properties
-     * @return CompositeField|GridField
      */
     public function Field($properties = [])
     {
         Requirements::css('gorriecoe/silverstripe-linkfield: client/dist/linkfield.css');
-        $field = null;
         $parent = $this->parent;
         switch ($this->isOneOrMany()) {
             case 'one':
@@ -129,12 +131,12 @@ class LinkField extends FormField
         $field->addExtraClass('linkfield');
 
         $this->extend('updateField', $field);
-        return $field;
+        return $field->Field();
     }
 
     /**
      * @param HTTPRequest $request
-     * @return array|RequestHandler|HTTPResponse|string
+     * @return array|RequestHandler|HTTPResponse|string|null
      * @throws HTTPResponse_Exception
      */
     public function handleRequest(HTTPRequest $request)
@@ -144,6 +146,8 @@ class LinkField extends FormField
                 return $this->getHasOneField()->handleRequest($request);
             case 'many':
                 return $this->getManyField()->handleRequest($request);
+            default:
+                return null;
         }
 
     }
@@ -151,11 +155,11 @@ class LinkField extends FormField
     /**
      * @return string|null
      */
-    public function isOneOrMany()
+    public function isOneOrMany(): ?string
     {
         $parent = $this->parent;
-        if (!$parent->exists()) {
-            return false;
+        if (!$parent->exists() || !$parent instanceof DataObject) {
+            return null;
         }
         switch ($parent->getRelationType($this->name)) {
             case 'has_one':
@@ -165,6 +169,8 @@ class LinkField extends FormField
             case 'many_many':
             case 'belongs_many_many':
                 return 'many';
+            default:
+                return null;
         }
     }
 
@@ -198,13 +204,13 @@ class LinkField extends FormField
     public function getManyField()
     {
         $config = GridFieldConfig::create()
-            ->addComponent(new GridFieldButtonRow('before'))
-            ->addComponent(new GridFieldAddNewButton('buttons-before-left'))
-            ->addComponent(new GridFieldLinkDetailForm($this->getLinkConfig()))
-            ->addComponent(new GridFieldDataColumns())
-            ->addComponent(new GridFieldOrderableRows($this->getSortColumn()))
-            ->addComponent(new GridFieldEditButton())
-            ->addComponent(new GridFieldDeleteAction(false));
+            ->addComponent(GridFieldButtonRow::create('before'))
+            ->addComponent(GridFieldAddNewButton::create('buttons-before-left'))
+            ->addComponent(GridFieldLinkDetailForm::create($this->getLinkConfig()))
+            ->addComponent(GridFieldDataColumns::create())
+            ->addComponent(GridFieldOrderableRows::create($this->getSortColumn()))
+            ->addComponent(GridFieldEditButton::create())
+            ->addComponent(GridFieldDeleteAction::create(false));
 
         $config->getComponentByType(GridFieldDataColumns::class)
             ->setDisplayFields([

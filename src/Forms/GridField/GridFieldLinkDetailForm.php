@@ -11,12 +11,9 @@ use SilverStripe\ORM\DataObject;
 class GridFieldLinkDetailForm extends GridFieldDetailForm
 {
 
-    /**
-     * @var array
-     */
-    protected $linkConfig;
+    protected array $linkConfig;
 
-    public function __construct($linkConfig = array(), $name = null, $showPagination = null, $showAdd = null)
+    public function __construct(array $linkConfig = [], $name = null, $showPagination = null, $showAdd = null)
     {
         parent::__construct($name, $showPagination, $showAdd);
 
@@ -32,12 +29,10 @@ class GridFieldLinkDetailForm extends GridFieldDetailForm
      */
     protected function getRecordFromRequest(GridField $gridField, HTTPRequest $request): ?DataObject
     {
-        /** @var Filterable $dataList */
         $dataList = $gridField->getList();
         $id = $request->param('ID');
         $record = null;
 
-        /** @var DataObject $record */
         if (is_numeric($id)) {
             $record = $dataList->byID($id);
         } else {

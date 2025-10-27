@@ -7,7 +7,7 @@ use SilverStripe\Forms\GridField\GridField_HTMLProvider;
 use SilverStripe\Forms\GridField\GridField_ActionProvider;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Forms\GridField\GridField_FormAction;
-use JsonSchema\Exception\ValidationException;
+use SilverStripe\Core\Validation\ValidationException;
 use SilverStripe\Control\Controller;
 
 class GridFieldHasOneDeleteButton implements GridField_HTMLProvider, GridField_ActionProvider
@@ -16,11 +16,10 @@ class GridFieldHasOneDeleteButton implements GridField_HTMLProvider, GridField_A
     /**
      * Fragment to write the button to
      */
-    protected $targetFragment;
+    protected string $targetFragment;
 
     /**
      * GridFieldHasOneUnlinkButton constructor.
-     * @param DataObject $parent
      * @param string $targetFragment
      */
     public function __construct($targetFragment = 'buttons-before-right')
@@ -59,6 +58,9 @@ class GridFieldHasOneDeleteButton implements GridField_HTMLProvider, GridField_A
 
     public function handleAction(GridField $gridField, $actionName, $arguments, $data)
     {
+
+        \PHPStan\dumpType($gridField);
+        
         if ($actionName !== 'deleterelation') {
             return;
         }
@@ -75,7 +77,7 @@ class GridFieldHasOneDeleteButton implements GridField_HTMLProvider, GridField_A
         }
 
         if (!$item->canDelete()) {
-            throw new ValidationException(
+            throw ValidationException::create(
                 _t(__CLASS__ . '.EditPermissionsFailure', 'No delete permissions')
             );
         }
@@ -97,12 +99,12 @@ class GridFieldHasOneDeleteButton implements GridField_HTMLProvider, GridField_A
             return [];
         }
 
-        $field = new GridField_FormAction(
+        $field = GridField_FormAction::create(
             $gridField,
             'gridfield_deleterelation',
             _t(__CLASS__ . '.Delete', 'Delete'),
             'deleterelation',
-            'deleterelation'
+            ['deleterelation']
         );
 
         $field->setAttribute('data-icon', 'chain--plus')
