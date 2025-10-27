@@ -10,7 +10,6 @@ use SilverStripe\ORM\DataObject;
 
 class GridFieldLinkDetailForm extends GridFieldDetailForm
 {
-
     protected array $linkConfig;
 
     public function __construct(array $linkConfig = [], $name = null, $showPagination = null, $showAdd = null)

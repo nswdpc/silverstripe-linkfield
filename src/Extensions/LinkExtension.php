@@ -14,7 +14,6 @@ use SilverStripe\Forms\OptionsetField;
  */
 class LinkExtension extends Extension
 {
-
     public function updateCMSFields(FieldList $fields)
     {
         // Hide Title field if the config requires it.

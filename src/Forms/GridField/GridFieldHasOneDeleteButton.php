@@ -12,7 +12,6 @@ use SilverStripe\Control\Controller;
 
 class GridFieldHasOneDeleteButton implements GridField_HTMLProvider, GridField_ActionProvider
 {
-
     /**
      * GridFieldHasOneUnlinkButton constructor.
      */
@@ -50,7 +49,7 @@ class GridFieldHasOneDeleteButton implements GridField_HTMLProvider, GridField_A
     {
 
         \PHPStan\dumpType($gridField);
-        
+
         if ($actionName !== 'deleterelation') {
             return;
         }
