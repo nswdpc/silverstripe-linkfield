@@ -2,6 +2,7 @@
 
 namespace gorriecoe\LinkField\Forms\GridField;
 
+use gorriecoe\LinkField\Forms\HasOneLinkField;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridField_HTMLProvider;
 use SilverStripe\Forms\GridField\GridField_ActionProvider;
@@ -48,7 +49,10 @@ class GridFieldHasOneDeleteButton implements GridField_HTMLProvider, GridField_A
     public function handleAction(GridField $gridField, $actionName, $arguments, $data)
     {
 
-        \PHPStan\dumpType($gridField);
+
+        if(!($gridField instanceof HasOneLinkField)) {
+            return;
+        }
 
         if ($actionName !== 'deleterelation') {
             return;
