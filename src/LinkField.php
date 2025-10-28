@@ -8,7 +8,7 @@ use gorriecoe\LinkField\Forms\HasOneLinkField;
 use SilverStripe\View\Requirements;
 use SilverStripe\Forms\FormField;
 use SilverStripe\Forms\CompositeField;
-use SilverStripe\Forms\LiteralField;
+use SilverStripe\Forms\HTMLReadonlyField;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldConfig;
 use SilverStripe\Forms\GridField\GridFieldButtonRow;
@@ -96,29 +96,34 @@ class LinkField extends FormField
         $parent = $this->parent;
         switch ($this->isOneOrMany()) {
             case 'one':
+                $field = CompositeField::create([
+                    $this->getHasOneField()
+                ]);
                 $relationship = $parent->{$this->name}();
-                $field = CompositeField::create(
-                    $this->getHasOneField(),
-                    LiteralField::create(
+                if($relationship instanceof Link) {
+                    $linkExampleField = HTMLReadonlyField::create(
                         $this->name . 'View',
-                        ($relationship->exists()) ? '<div class="linkfield__view">' . $relationship->Layout . '</div>' : ''
-                    )
-                );
+                        _t(self::class . '.EXAMPLE', 'Example'),
+                        htmlspecialchars($relationship->forTemplate())
+                    );
+                    $field->push($linkExampleField);
+                }
                 break;
             case 'many':
                 $field = $this->getManyField();
                 break;
             default:
-                $field = LiteralField::create(
+                $field = HTMLReadonlyField::create(
                     $this->name . 'Save',
-                    _t(
+                    _t(self::class . '.SAVETITLE', 'Save'),
+                    htmlspecialchars(_t(
                         self::class . '.PLEASESAVEOBJECTTOADDLINKS',
                         'Please save {object} first to add {links}',
                         [
-                            'object' => $parent->i18n_singular_name(),
+                            'object' => _t(self::class . '.THIS_RECORD_SAVE', 'this record'),
                             'links' => singleton(Link::class)->i18n_plural_name()
                         ]
-                    )
+                    ))
                 );
                 break;
         }
