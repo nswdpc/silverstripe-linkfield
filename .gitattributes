@@ -1,2 +1,13 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+/tests                      export-ignore
+/docs                       export-ignore
+/.editorconfig              export-ignore
+/.gitattributes             export-ignore
+/.gitignore                 export-ignore
+/code-of-conduct.md         export-ignore
+/contributing.md            export-ignore
+/README.md                  export-ignore
+/.scrutinizer.yml           export-ignore
+/.github                    export-ignore
+/webpack.mix.js             export-ignore
