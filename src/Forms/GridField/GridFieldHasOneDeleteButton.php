@@ -87,6 +87,11 @@ class GridFieldHasOneDeleteButton implements GridField_HTMLProvider, GridField_A
 
     public function getHTMLFragments($gridField)
     {
+
+        if(!($gridField instanceof HasOneLinkField)) {
+            return [];
+        }
+
         $record = $gridField->getRecord();
         if (!$record || !$record->exists()) {
             return [];
