@@ -139,8 +139,8 @@ class HasOneLinkField extends HasOneButtonField
         }
 
         if ($message) {
-            $html .= '<p class="alert" role="alert" id="message-' . $this->ID
-                . '">' . $message . '</p>';
+            $html .= '<p class="alert" role="alert" id="message-' . Convert::raw2htmlatt($this->ID)
+                . '">' . htmlspecialchars($message) . '</p>';
         }
 
         return $html;
