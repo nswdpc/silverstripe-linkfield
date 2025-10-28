@@ -100,7 +100,7 @@ class LinkField extends FormField
                     $this->getHasOneField()
                 ]);
                 $relationship = $parent->{$this->name}();
-                if($relationship instanceof Link) {
+                if ($relationship instanceof Link) {
                     $linkExampleField = HTMLReadonlyField::create(
                         $this->name . 'View',
                         _t(self::class . '.EXAMPLE', 'Example'),

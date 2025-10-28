@@ -50,7 +50,7 @@ class GridFieldHasOneDeleteButton implements GridField_HTMLProvider, GridField_A
     {
 
 
-        if(!($gridField instanceof HasOneLinkField)) {
+        if (!($gridField instanceof HasOneLinkField)) {
             return;
         }
 
@@ -88,7 +88,7 @@ class GridFieldHasOneDeleteButton implements GridField_HTMLProvider, GridField_A
     public function getHTMLFragments($gridField)
     {
 
-        if(!($gridField instanceof HasOneLinkField)) {
+        if (!($gridField instanceof HasOneLinkField)) {
             return [];
         }
 
