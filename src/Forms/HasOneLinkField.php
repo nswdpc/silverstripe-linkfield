@@ -59,10 +59,8 @@ class HasOneLinkField extends HasOneButtonField
 
     /**
      * Get the configuration for this Link relationship.
-     *
-     * @return array
      */
-    public function getLinkConfig()
+    public function getLinkConfig(): array
     {
         $detailForm = $this->getConfig()->getComponentByType(GridFieldLinkDetailForm::class);
         if ($detailForm) {

@@ -108,6 +108,7 @@ class LinkField extends FormField
                     );
                     $field->push($linkExampleField);
                 }
+
                 break;
             case 'many':
                 $field = $this->getManyField();
