@@ -55,8 +55,6 @@ class GridFieldLinkDetailForm extends GridFieldDetailForm
 
     /**
      * Set the configuration for this Link relationship.
-     *
-     * @return $this
      */
     public function setLinkConfig(array $linkConfig): static
     {

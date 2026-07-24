@@ -44,8 +44,6 @@ class HasOneLinkField extends HasOneButtonField
 
     /**
      * Set the configuration for this Link relationship.
-     *
-     * @return $this
      */
     public function setLinkConfig(array $linkConfig): static
     {

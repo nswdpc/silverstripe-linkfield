@@ -222,7 +222,6 @@ class LinkField extends FormField
     /**
      * Set the column to be used for sorting
      * @param string $sortColumn
-     * @return $this
      */
     public function setSortColumn($sortColumn): static
     {
@@ -246,7 +245,6 @@ class LinkField extends FormField
     /**
      * Set the configuration for this Link relationship.
      * @param array $linkConfig
-     * @return $this
      */
     public function setLinkConfig($linkConfig): static
     {
