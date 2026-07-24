@@ -10,13 +10,9 @@ use SilverStripe\ORM\DataObject;
 
 class GridFieldLinkDetailForm extends GridFieldDetailForm
 {
+    protected array $linkConfig;
 
-    /**
-     * @var array
-     */
-    protected $linkConfig;
-
-    public function __construct($linkConfig = array(), $name = null, $showPagination = null, $showAdd = null)
+    public function __construct(array $linkConfig = [], $name = null, $showPagination = null, $showAdd = null)
     {
         parent::__construct($name, $showPagination, $showAdd);
 
@@ -30,24 +26,25 @@ class GridFieldLinkDetailForm extends GridFieldDetailForm
      * {@inheritDoc}
      * @see \SilverStripe\Forms\GridField\GridFieldDetailForm::getRecordFromRequest()
      */
+    #[\Override]
     protected function getRecordFromRequest(GridField $gridField, HTTPRequest $request): ?DataObject
     {
-        /** @var Filterable $dataList */
         $dataList = $gridField->getList();
         $id = $request->param('ID');
         $record = null;
 
-        /** @var DataObject $record */
         if (is_numeric($id)) {
             $record = $dataList->byID($id);
         } else {
             if ($id == 'new') {
                 $record = $dataList->byID(0);
             }
+
             if (!$record) {
                 $record = Injector::inst()->create($gridField->getModelClass());
             }
         }
+
         // Set the config on the record if we have one.
         if ($record) {
             $record->link_requirements = $this->getLinkConfig();
@@ -58,11 +55,8 @@ class GridFieldLinkDetailForm extends GridFieldDetailForm
 
     /**
      * Set the configuration for this Link relationship.
-     *
-     * @param array $linkConfig
-     * @return $this
      */
-    public function setLinkConfig($linkConfig)
+    public function setLinkConfig(array $linkConfig): static
     {
         $this->linkConfig = $linkConfig;
         return $this;
@@ -70,10 +64,8 @@ class GridFieldLinkDetailForm extends GridFieldDetailForm
 
     /**
      * Get the configuration for this Link relationship.
-     *
-     * @return array
      */
-    public function getLinkConfig()
+    public function getLinkConfig(): array
     {
         return $this->linkConfig;
     }

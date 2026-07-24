@@ -8,7 +8,7 @@ use gorriecoe\LinkField\Forms\HasOneLinkField;
 use SilverStripe\View\Requirements;
 use SilverStripe\Forms\FormField;
 use SilverStripe\Forms\CompositeField;
-use SilverStripe\Forms\LiteralField;
+use SilverStripe\Forms\HTMLReadonlyField;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridFieldConfig;
 use SilverStripe\Forms\GridField\GridFieldButtonRow;
@@ -17,12 +17,16 @@ use SilverStripe\Forms\GridField\GridFieldEditButton;
 use SilverStripe\Forms\GridField\GridFieldDeleteAction;
 use SilverStripe\Forms\GridField\GridFieldDataColumns;
 use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Control\HTTPResponse;
+use SilverStripe\Control\HTTPResponse_Exception;
+use SilverStripe\Control\RequestHandler;
+use SilverStripe\ORM\DataObject;
 use Symbiote\GridFieldExtensions\GridFieldOrderableRows;
 use SilverShop\HasOneField\HasOneButtonField;
 
 /**
  * LinkField
- *
+ *s
  * @package silverstripe-linkfield
  */
 class LinkField extends FormField
@@ -38,16 +42,6 @@ class LinkField extends FormField
     protected $title;
 
     /**
-     * @var array $linkConfig
-     */
-    protected $linkConfig;
-
-    /**
-     * @var DataObject $parent
-     */
-    protected $parent;
-
-    /**
      * @var DataObject $parent
      */
     protected $record;
@@ -56,26 +50,28 @@ class LinkField extends FormField
      * The column to be used for sorting
      * @var string
      */
-    protected $sortColumn = null;
+    protected $sortColumn;
 
     /**
      * The column to be used for sorting
-     * @var string
      */
-    private static $sort_column = 'Sort';
+    private static string $sort_column = 'Sort';
 
-    public function __construct($name, $title, $parent, $linkConfig = array())
+    /**
+     * @param mixed[] $linkConfig
+     * @param DataObject $parent
+     */
+    public function __construct($name, $title, protected $parent, protected $linkConfig = [])
     {
-        parent::__construct($name, $title, null);
+        parent::__construct($name, $title);
 
         $this->name = $name;
         $this->title = $title;
-        $this->parent = $parent;
-        $this->linkConfig = $linkConfig;
         if ($this->isOneOrMany() == 'one') {
-            $this->record = $parent->{$name}();
+            $this->record = $this->parent->{$name}();
         }
-        $this->setForm($parent->Form);
+
+        $this->setForm($this->parent->Form);
     }
 
     /**
@@ -83,6 +79,7 @@ class LinkField extends FormField
      *
      * @return $this
      */
+    #[\Override]
     public function setTitle($title)
     {
         $this->title = $title;
@@ -91,81 +88,80 @@ class LinkField extends FormField
 
     /**
      * @param array $properties
-     * @return CompositeField|GridField
      */
+    #[\Override]
     public function Field($properties = [])
     {
-        Requirements::css('gorriecoe/silverstripe-linkfield: client/dist/linkfield.css');
-        $field = null;
+        Requirements::css('nswdpc/silverstripe-linkfield: client/dist/linkfield.css');
         $parent = $this->parent;
         switch ($this->isOneOrMany()) {
             case 'one':
+                $field = CompositeField::create([
+                    $this->getHasOneField()
+                ]);
                 $relationship = $parent->{$this->name}();
-                $field = CompositeField::create(
-                    $this->getHasOneField(),
-                    LiteralField::create(
+                if ($relationship instanceof Link) {
+                    $linkExampleField = HTMLReadonlyField::create(
                         $this->name . 'View',
-                        ($relationship->exists()) ? '<div class="linkfield__view">' . $relationship->Layout . '</div>' : ''
-                    )
-                );
+                        _t(self::class . '.EXAMPLE', 'Example'),
+                        htmlspecialchars($relationship->forTemplate())
+                    );
+                    $field->push($linkExampleField);
+                }
+
                 break;
             case 'many':
                 $field = $this->getManyField();
                 break;
             default:
-                $field = LiteralField::create(
+                $field = HTMLReadonlyField::create(
                     $this->name . 'Save',
-                    _t(
-                        __CLASS__ . '.PLEASESAVEOBJECTTOADDLINKS',
+                    _t(self::class . '.SAVETITLE', 'Save'),
+                    htmlspecialchars(_t(
+                        self::class . '.PLEASESAVEOBJECTTOADDLINKS',
                         'Please save {object} first to add {links}',
                         [
-                            'object' => $parent->i18n_singular_name(),
+                            'object' => _t(self::class . '.THIS_RECORD_SAVE', 'this record'),
                             'links' => singleton(Link::class)->i18n_plural_name()
                         ]
-                    )
+                    ))
                 );
                 break;
         }
+
         $field->addExtraClass('linkfield');
 
         $this->extend('updateField', $field);
-        return $field;
+        return $field->Field();
     }
 
     /**
-     * @param HTTPRequest $request
-     * @return array|RequestHandler|HTTPResponse|string
+     * @return array|RequestHandler|HTTPResponse|string|null
      * @throws HTTPResponse_Exception
      */
+    #[\Override]
     public function handleRequest(HTTPRequest $request)
     {
-        switch ($this->isOneOrMany()) {
-            case 'one':
-                return $this->getHasOneField()->handleRequest($request);
-            case 'many':
-                return $this->getManyField()->handleRequest($request);
-        }
+        return match ($this->isOneOrMany()) {
+            'one' => $this->getHasOneField()->handleRequest($request),
+            'many' => $this->getManyField()->handleRequest($request),
+            default => null,
+        };
 
     }
 
-    /**
-     * @return string|null
-     */
-    public function isOneOrMany()
+    public function isOneOrMany(): ?string
     {
         $parent = $this->parent;
-        if (!$parent->exists()) {
-            return false;
+        if (!$parent->exists() || !$parent instanceof DataObject) {
+            return null;
         }
-        switch ($parent->getRelationType($this->name)) {
-            case 'has_one':
-            case 'belongs_to':
-                return 'one';
-            case 'has_many':
-            case 'many_many':
-            case 'belongs_many_many':
-                return 'many';
-        }
+
+        return match ($parent->getRelationType($this->name)) {
+            'has_one', 'belongs_to' => 'one',
+            'has_many', 'many_many', 'belongs_many_many' => 'many',
+            default => null,
+        };
     }
 
     public function getRecord()
@@ -198,17 +194,17 @@ class LinkField extends FormField
     public function getManyField()
     {
         $config = GridFieldConfig::create()
-            ->addComponent(new GridFieldButtonRow('before'))
-            ->addComponent(new GridFieldAddNewButton('buttons-before-left'))
-            ->addComponent(new GridFieldLinkDetailForm($this->getLinkConfig()))
-            ->addComponent(new GridFieldDataColumns())
-            ->addComponent(new GridFieldOrderableRows($this->getSortColumn()))
-            ->addComponent(new GridFieldEditButton())
-            ->addComponent(new GridFieldDeleteAction(false));
+            ->addComponent(GridFieldButtonRow::create('before'))
+            ->addComponent(GridFieldAddNewButton::create('buttons-before-left'))
+            ->addComponent(GridFieldLinkDetailForm::create($this->getLinkConfig()))
+            ->addComponent(GridFieldDataColumns::create())
+            ->addComponent(GridFieldOrderableRows::create($this->getSortColumn()))
+            ->addComponent(GridFieldEditButton::create())
+            ->addComponent(GridFieldDeleteAction::create(false));
 
         $config->getComponentByType(GridFieldDataColumns::class)
             ->setDisplayFields([
-                'Layout' => _t(__CLASS__ . '.LINK', 'Link')
+                'Layout' => _t(self::class . '.LINK', 'Link')
             ]);
 
         $field = GridField::create(
@@ -226,9 +222,8 @@ class LinkField extends FormField
     /**
      * Set the column to be used for sorting
      * @param string $sortColumn
-     * @return $this
      */
-    public function setSortColumn($sortColumn)
+    public function setSortColumn($sortColumn): static
     {
         $this->sortColumn = $sortColumn;
         return $this;
@@ -243,15 +238,15 @@ class LinkField extends FormField
         if ($this->sortColumn) {
             return $this->sortColumn;
         }
+
         return $this->config()->get('sort_column');
     }
 
     /**
      * Set the configuration for this Link relationship.
      * @param array $linkConfig
-     * @return $this
      */
-    public function setLinkConfig($linkConfig)
+    public function setLinkConfig($linkConfig): static
     {
         $this->linkConfig = $linkConfig;
         return $this;
@@ -266,6 +261,7 @@ class LinkField extends FormField
         return $this->linkConfig;
     }
 
+    #[\Override]
     public function validate(): \SilverStripe\Core\Validation\ValidationResult
     {
         return $this->Field()->validate();

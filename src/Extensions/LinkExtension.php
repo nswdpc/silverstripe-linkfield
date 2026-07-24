@@ -2,16 +2,18 @@
 
 namespace gorriecoe\LinkField\Extensions;
 
+use gorriecoe\LinkField\LinkField;
 use SilverStripe\Core\Extension;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\HiddenField;
+use SilverStripe\Forms\OptionsetField;
 
 /**
  * Used in conjunction with LinkField, makes the types of Links available configurable.
+ * @extends \SilverStripe\Core\Extension<(\gorriecoe\Link\Models\Link & static)>
  */
 class LinkExtension extends Extension
 {
-
     public function updateCMSFields(FieldList $fields)
     {
         // Hide Title field if the config requires it.
@@ -20,13 +22,11 @@ class LinkExtension extends Extension
         }
 
         // Set default Type value.
-        $types = array_keys($this->owner->getTypes());
+        $types = array_keys($this->getOwner()->getTypes());
         $typeField = $fields->dataFieldByName('Type');
-        if (!in_array($typeField->Value(), $types)) {
+        if (($typeField instanceof OptionsetField) && !in_array($typeField->getValue(), $types)) {
             $typeField->setValue($types[0]);
         }
-
-        parent::updateCMSFields($fields);
     }
 
     public function onBeforeWrite()
@@ -40,14 +40,13 @@ class LinkExtension extends Extension
 
     /**
      * Only display the link types as defined by the owner's configuration.
-     * @param array $types
      * @see \gorriecoe\Link\Models\Link::getTypes
      */
-    public function updateTypes(&$types)
+    public function updateTypes(array &$types)
     {
-        $linkSpecs = $this->owner->link_requirements;
+        $linkSpecs = $this->getOwner()->link_requirements;
         if (!empty($linkSpecs['types'])) {
-            foreach ($types as $type => $typeName) {
+            foreach (array_keys($types) as $type) {
                 if (empty($linkSpecs['types'][$type]) && !in_array($type, $linkSpecs['types'], true)) {
                     unset($types[$type]);
                 }
@@ -55,14 +54,14 @@ class LinkExtension extends Extension
         }
     }
 
-    protected function shouldDisplayTitleFields()
+    protected function shouldDisplayTitleFields(): bool
     {
-        $linkSpecs = $this->owner->link_requirements;
+        $linkSpecs = $this->getOwner()->link_requirements;
         return !isset($linkSpecs['title_display']) || $linkSpecs['title_display'];
     }
 
     protected function resetTitle()
     {
-        $this->owner->Title = null;
+        $this->getOwner()->Title = null;
     }
 }

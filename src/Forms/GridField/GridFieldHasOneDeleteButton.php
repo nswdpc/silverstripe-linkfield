@@ -2,47 +2,36 @@
 
 namespace gorriecoe\LinkField\Forms\GridField;
 
+use gorriecoe\LinkField\Forms\HasOneLinkField;
 use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\Forms\GridField\GridField_HTMLProvider;
 use SilverStripe\Forms\GridField\GridField_ActionProvider;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Forms\GridField\GridField_FormAction;
-use JsonSchema\Exception\ValidationException;
+use SilverStripe\Core\Validation\ValidationException;
 use SilverStripe\Control\Controller;
 
 class GridFieldHasOneDeleteButton implements GridField_HTMLProvider, GridField_ActionProvider
 {
-
-    /**
-     * Fragment to write the button to
-     */
-    protected $targetFragment;
-
     /**
      * GridFieldHasOneUnlinkButton constructor.
-     * @param DataObject $parent
-     * @param string $targetFragment
      */
-    public function __construct($targetFragment = 'buttons-before-right')
+    public function __construct(protected string $targetFragment = 'buttons-before-right')
     {
-        $this->targetFragment = $targetFragment;
     }
 
     /**
      * Get fragment to write the button to
      */
-    public function getTargetFragment()
+    public function getTargetFragment(): string
     {
         return $this->targetFragment;
     }
 
     /**
      * Set fragment to write the button to
-     *
-     * @param string $targetFragment
-     * @return static
      */
-    public function setTargetFragment($targetFragment)
+    public function setTargetFragment(string $targetFragment): static
     {
         $this->targetFragment = $targetFragment;
         return $this;
@@ -59,6 +48,12 @@ class GridFieldHasOneDeleteButton implements GridField_HTMLProvider, GridField_A
 
     public function handleAction(GridField $gridField, $actionName, $arguments, $data)
     {
+
+
+        if (!($gridField instanceof HasOneLinkField)) {
+            return;
+        }
+
         if ($actionName !== 'deleterelation') {
             return;
         }
@@ -75,8 +70,8 @@ class GridFieldHasOneDeleteButton implements GridField_HTMLProvider, GridField_A
         }
 
         if (!$item->canDelete()) {
-            throw new ValidationException(
-                _t(__CLASS__ . '.EditPermissionsFailure', 'No delete permissions')
+            throw ValidationException::create(
+                _t(self::class . '.EditPermissionsFailure', 'No delete permissions')
             );
         }
 
@@ -86,23 +81,28 @@ class GridFieldHasOneDeleteButton implements GridField_HTMLProvider, GridField_A
 
         Controller::curr()->getResponse()->setStatusCode(
             200,
-            _t(__CLASS__ . '.Deleted', 'Deleted')
+            _t(self::class . '.Deleted', 'Deleted')
         );
     }
 
     public function getHTMLFragments($gridField)
     {
+
+        if (!($gridField instanceof HasOneLinkField)) {
+            return [];
+        }
+
         $record = $gridField->getRecord();
         if (!$record || !$record->exists()) {
             return [];
         }
 
-        $field = new GridField_FormAction(
+        $field = GridField_FormAction::create(
             $gridField,
             'gridfield_deleterelation',
-            _t(__CLASS__ . '.Delete', 'Delete'),
+            _t(self::class . '.Delete', 'Delete'),
             'deleterelation',
-            'deleterelation'
+            ['deleterelation']
         );
 
         $field->setAttribute('data-icon', 'chain--plus')

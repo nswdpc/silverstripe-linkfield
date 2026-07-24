@@ -9,6 +9,7 @@ use SilverShop\HasOneField\GridFieldHasOneEditButton;
 use SilverShop\HasOneField\GridFieldSummaryField;
 use SilverShop\HasOneField\HasOneButtonField;
 use SilverStripe\Core\Convert;
+use SilverStripe\Core\Validation\ValidationResult;
 use SilverStripe\Forms\GridField\GridFieldConfig;
 use SilverStripe\ORM\DataObject;
 
@@ -26,15 +27,15 @@ class HasOneLinkField extends HasOneButtonField
         DataObject $parent,
         $relationName,
         $title = null,
-        $linkConfig = array(),
+        $linkConfig = [],
         $useAutocompleter = false
     ) {
         $config = GridFieldConfig::create()
-            ->addComponent(new GridFieldHasOneButtonRow())
+            ->addComponent(GridFieldHasOneButtonRow::create())
             ->addComponent(new GridFieldSummaryField($relationName))
-            ->addComponent($detailForm = new GridFieldLinkDetailForm($linkConfig))
+            ->addComponent($detailForm = GridFieldLinkDetailForm::create($linkConfig))
             ->addComponent(new GridFieldHasOneDeleteButton())
-            ->addComponent(new GridFieldHasOneEditButton('buttons-before-right'));
+            ->addComponent(GridFieldHasOneEditButton::create('buttons-before-right'));
 
         $detailForm->setShowAdd(false);
 
@@ -43,30 +44,27 @@ class HasOneLinkField extends HasOneButtonField
 
     /**
      * Set the configuration for this Link relationship.
-     *
-     * @param array $linkConfig
-     * @return $this
      */
-    public function setLinkConfig($linkConfig)
+    public function setLinkConfig(array $linkConfig): static
     {
         $detailForm = $this->getConfig()->getComponentByType(GridFieldLinkDetailForm::class);
         if ($detailForm) {
             $detailForm->setLinkConfig($linkConfig);
         }
+
         return $this;
     }
 
     /**
      * Get the configuration for this Link relationship.
-     *
-     * @return array
      */
-    public function getLinkConfig()
+    public function getLinkConfig(): array
     {
         $detailForm = $this->getConfig()->getComponentByType(GridFieldLinkDetailForm::class);
         if ($detailForm) {
             return $detailForm->getLinkConfig();
         }
+
         return [];
     }
 
@@ -85,7 +83,8 @@ class HasOneLinkField extends HasOneButtonField
      * {@inheritdoc}
      * @see \SilverStripe\Forms\FormField::validate()
      */
-    public function validate(): \SilverStripe\Core\Validation\ValidationResult
+    #[\Override]
+    public function validate(): ValidationResult
     {
         $validationResult = parent::validate();
         $valid = $validationResult->isValid();
@@ -93,7 +92,7 @@ class HasOneLinkField extends HasOneButtonField
             $recordValidationResult = $this->getRecord()->validate();
             $valid = $recordValidationResult->isValid();
             foreach ($recordValidationResult->getMessages() as $message) {
-                $messageString = (string) $message['message'] ?? '';
+                $messageString = $message['message'] ?? '';
                 $validationResult->addFieldError(
                     $this->getName(),
                     $messageString,
@@ -103,6 +102,7 @@ class HasOneLinkField extends HasOneButtonField
                 );
             }
         }
+
         if ($valid && $this->Required() && !$this->getRecord()->Type) {
             $valid = false;
 
@@ -112,6 +112,7 @@ class HasOneLinkField extends HasOneButtonField
 
             $validationResult->addFieldError($this->getName(), $errorMessage, ValidationResult::TYPE_ERROR);
         }
+
         return $validationResult;
     }
 
@@ -124,7 +125,8 @@ class HasOneLinkField extends HasOneButtonField
      * {@inheritdoc}
      * @see \SilverStripe\Forms\GridField\GridField::FieldHolder()
      */
-    public function FieldHolder($properties = array())
+    #[\Override]
+    public function FieldHolder($properties = [])
     {
         $html = parent::FieldHolder();
         $message = Convert::raw2xml($this->getMessage());
@@ -133,9 +135,8 @@ class HasOneLinkField extends HasOneButtonField
         }
 
         if ($message) {
-            $html .= '<p class="alert ' . $this->getAlertType()
-                . '" role="alert" id="message-' . $this->ID
-                . '">' . $message . '</p>';
+            $html .= '<p class="alert" role="alert" id="message-' . Convert::raw2htmlatt($this->ID)
+                . '">' . htmlspecialchars($message) . '</p>';
         }
 
         return $html;
