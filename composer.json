@@ -1,6 +1,9 @@
 {
-  "name": "gorriecoe/silverstripe-linkfield",
-  "description": "Adds a Linkfield for gorriecoe/silverstripe-link",
+  "name": "nswdpc/silverstripe-linkfield",
+  "replace": {
+      "gorriecoe/silverstripe-linkfield": "self.version"
+  },
+  "description": "Adds a link field for nswdpc/silverstripe-link",
   "type": "silverstripe-vendormodule",
   "license": "BSD-3-Clause",
   "authors": [
@@ -15,11 +18,10 @@
     "cms",
     "link"
   ],
-  "homepage": "http://github.com/gorriecoe/silverstripe-linkfield",
   "require": {
     "silverstripe/framework": "^6",
-    "gorriecoe/silverstripe-link": "dev-ss6dev",
-    "silvershop/silverstripe-hasonefield": "dev-main",
+    "nswdpc/silverstripe-link": "^2",
+    "silvershop/silverstripe-hasonefield": "^5",
     "symbiote/silverstripe-gridfieldextensions": "^5"
   },
   "require-dev": {
@@ -31,12 +33,6 @@
       "phpunit/phpunit": "^11.5",
       "rector/rector": "^2"
   },
-  "repositories": [
-    {
-        "type": "vcs",
-        "url": "https://github.com/nswdpc/silverstripe-link.git"
-    }
-  ],
   "extra": {
     "installer-name": "linkfield",
     "expose": [
@@ -56,5 +52,7 @@
       "silverstripe/recipe-plugin": true,
       "phpstan/extension-installer": true
     }
-  }
+  },
+  "prefer-stable": true,
+  "minimum-stability": "dev"
 }

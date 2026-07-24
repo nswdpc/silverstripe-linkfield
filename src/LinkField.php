@@ -92,7 +92,7 @@ class LinkField extends FormField
     #[\Override]
     public function Field($properties = [])
     {
-        Requirements::css('gorriecoe/silverstripe-linkfield: client/dist/linkfield.css');
+        Requirements::css('nswdpc/silverstripe-linkfield: client/dist/linkfield.css');
         $parent = $this->parent;
         switch ($this->isOneOrMany()) {
             case 'one':

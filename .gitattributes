@@ -11,4 +11,5 @@
 /README.md                  export-ignore
 /.scrutinizer.yml           export-ignore
 /.github                    export-ignore
+/mix-manifest.json          export-ignore
 /webpack.mix.js             export-ignore
