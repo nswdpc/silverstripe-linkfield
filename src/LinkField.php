@@ -5,6 +5,8 @@ namespace gorriecoe\LinkField;
 use gorriecoe\Link\Models\Link;
 use gorriecoe\LinkField\Forms\GridField\GridFieldLinkDetailForm;
 use gorriecoe\LinkField\Forms\HasOneLinkField;
+use SilverStripe\Core\Validation\FieldValidation\FieldValidationInterface;
+use SilverStripe\Core\Validation\ValidationResult;
 use SilverStripe\View\Requirements;
 use SilverStripe\Forms\FormField;
 use SilverStripe\Forms\CompositeField;
@@ -87,12 +89,10 @@ class LinkField extends FormField
     }
 
     /**
-     * @param array $properties
+     * Get the field that renders the link management interface
      */
-    #[\Override]
-    public function Field($properties = [])
+    protected function getLinkManagementField(): FormField
     {
-        Requirements::css('nswdpc/silverstripe-linkfield: client/dist/linkfield.css');
         $parent = $this->parent;
         switch ($this->isOneOrMany()) {
             case 'one':
@@ -132,6 +132,18 @@ class LinkField extends FormField
         $field->addExtraClass('linkfield');
 
         $this->extend('updateField', $field);
+
+        return $field;
+    }
+
+    /**
+     * @param array $properties
+     */
+    #[\Override]
+    public function Field($properties = [])
+    {
+        Requirements::css('nswdpc/silverstripe-linkfield: client/dist/linkfield.css');
+        $field = $this->getLinkManagementField();
         return $field->Field();
     }
 
@@ -262,8 +274,8 @@ class LinkField extends FormField
     }
 
     #[\Override]
-    public function validate(): \SilverStripe\Core\Validation\ValidationResult
+    public function validate(): ValidationResult
     {
-        return $this->Field()->validate();
+        return $this->getLinkManagementField()->validate();
     }
 }
