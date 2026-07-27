@@ -5,7 +5,6 @@ namespace gorriecoe\LinkField;
 use gorriecoe\Link\Models\Link;
 use gorriecoe\LinkField\Forms\GridField\GridFieldLinkDetailForm;
 use gorriecoe\LinkField\Forms\HasOneLinkField;
-use SilverStripe\Core\Validation\FieldValidation\FieldValidationInterface;
 use SilverStripe\Core\Validation\ValidationResult;
 use SilverStripe\View\Requirements;
 use SilverStripe\Forms\FormField;
