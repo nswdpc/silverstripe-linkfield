@@ -21,7 +21,7 @@ gorriecoe\LinkField\Migration\LinkMigrator:
 
 # Nothing actually migrates or changes rendering behaviour from here: a
 # project must explicitly allow-list each relation it wants migrated. See
-# gorriecoe\LinkField\LinkField::$migrated_relations and MIGRATION.md for a
+# gorriecoe\LinkField\LinkField::$migrated_relations and docs/en/migration.md for a
 # full worked example (including the required has_one config override).
 gorriecoe\LinkField\LinkField:
   migrated_relations: []
