@@ -13,3 +13,4 @@
 /.github                    export-ignore
 /mix-manifest.json          export-ignore
 /webpack.mix.js             export-ignore
+/.devcontainer              export-ignore
