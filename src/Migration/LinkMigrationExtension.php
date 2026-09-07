@@ -3,6 +3,8 @@
 namespace gorriecoe\LinkField\Migration;
 
 use SilverStripe\Core\Extension;
+use SilverStripe\Forms\CheckboxField;
+use SilverStripe\Forms\FieldList;
 use SilverStripe\LinkField\Models\Link as CoreLink;
 use SilverStripe\ORM\Filters\ExactMatchFilter;
 
@@ -34,4 +36,15 @@ class LinkMigrationExtension extends Extension
     private static array $searchable_fields = [
         'IsMigrated' => ExactMatchFilter::class,
     ];
+
+    public function updateCmsFields(FieldList $fields)
+    {
+        $fields->addFieldToTab(
+            'Root.Main',
+            CheckboxField::create(
+                'IsMigrated',
+                _t('linkfield.IS_MIGRATED_FIELD_TITLE', 'Migrated to core link?')
+            )
+        );
+    }
 }
