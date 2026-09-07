@@ -22,7 +22,8 @@
     "silverstripe/framework": "^6",
     "nswdpc/silverstripe-link": "^2",
     "silvershop/silverstripe-hasonefield": "^5",
-    "symbiote/silverstripe-gridfieldextensions": "^5"
+    "symbiote/silverstripe-gridfieldextensions": "^5",
+    "silverstripe/linkfield": "^5"
   },
   "require-dev": {
       "cambis/silverstan": "^2",

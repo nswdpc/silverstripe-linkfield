@@ -21,6 +21,7 @@ use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Control\HTTPResponse_Exception;
 use SilverStripe\Control\RequestHandler;
+use SilverStripe\LinkField\Form\LinkField as CoreLinkField;
 use SilverStripe\ORM\DataObject;
 use Symbiote\GridFieldExtensions\GridFieldOrderableRows;
 use SilverShop\HasOneField\HasOneButtonField;
@@ -59,6 +60,44 @@ class LinkField extends FormField
     private static string $sort_column = 'Sort';
 
     /**
+     * Allow-list of owner class => relation names that are eligible to be
+     * migrated to core silverstripe/linkfield. Nothing migrates by default -
+     * a relation must be explicitly listed here, and its underlying Link
+     * record must already be flagged as migrated (via LinkMigrator), before
+     * this field starts delegating to core's own field. Only has_one
+     * relations are ever delegated; has_many/many_many/belongs_many_many
+     * relations always keep rendering via the legacy field, since those
+     * relation types are never eligible for migration in the first place
+     * (see LinkMigrator).
+     *
+     * gorriecoe\LinkField\LinkField:
+     *   migrated_relations:
+     *     MyPage:
+     *       - Button
+     *
+     * Listing a relation here only controls which delegate field gets
+     * rendered. For core's LinkFieldController to recognise the relation at
+     * all (SilverStripe\LinkField\Controllers\LinkFieldController::
+     * getOwnerFromRequest() matches by checking the owner's own configured
+     * has_one target class against SilverStripe\LinkField\Models\Link), the
+     * owning class's own has_one entry for that relation must also be
+     * repointed at core's Link class in the project's own config, e.g.:
+     *
+     * MyPage:
+     *   has_one:
+     *     Button: SilverStripe\LinkField\Models\Link
+     *
+     * This is a config-only change (no PHP edit to the owning DataObject
+     * class), and only takes effect once the underlying Link has actually
+     * been migrated - see docs/en/migration.md.
+     */
+    private static array $migrated_relations = [];
+
+    private ?FormField $migratedDelegate = null;
+
+    private bool $migratedDelegateResolved = false;
+
+    /**
      * @param mixed[] $linkConfig
      * @param DataObject $parent
      */
@@ -73,6 +112,55 @@ class LinkField extends FormField
         }
 
         $this->setForm($this->parent->Form);
+    }
+
+    /**
+     * If this relation has been allow-listed for migration and its
+     * underlying Link has already been migrated, returns a delegate
+     * instance of core silverstripe/linkfield's own field, which Field(),
+     * handleRequest() and validate() defer to instead of the legacy
+     * rendering/handling below. Returns null for any relation that isn't
+     * allow-listed, isn't yet migrated, or isn't a has_one/belongs_to
+     * relation - in all of those cases behaviour is unchanged from today.
+     */
+    protected function getMigratedDelegate(): ?FormField
+    {
+        if ($this->migratedDelegateResolved) {
+            return $this->migratedDelegate;
+        }
+
+        $this->migratedDelegateResolved = true;
+
+        if ($this->isOneOrMany() !== 'one' || !$this->isRelationMigrationAllowed()) {
+            return $this->migratedDelegate;
+        }
+
+        $oldLink = $this->record;
+        if (!$oldLink instanceof Link || !$oldLink->exists() || !$oldLink->IsMigrated || !$oldLink->MigratedLinkID) {
+            return $this->migratedDelegate;
+        }
+
+        $this->migratedDelegate = CoreLinkField::create($this->name, $this->title)
+            ->setForm($this->parent->Form)
+            ->setValue($oldLink->MigratedLinkID);
+
+        return $this->migratedDelegate;
+    }
+
+    /**
+     * Whether $this->name on $this->parent's class has been explicitly
+     * allow-listed for migration via the migrated_relations config.
+     */
+    protected function isRelationMigrationAllowed(): bool
+    {
+        $allowList = (array) $this->config()->get('migrated_relations');
+        foreach ($allowList as $class => $relations) {
+            if (is_a($this->parent, $class) && in_array($this->name, (array) $relations, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -141,6 +229,10 @@ class LinkField extends FormField
     #[\Override]
     public function Field($properties = [])
     {
+        if ($delegate = $this->getMigratedDelegate()) {
+            return $delegate->Field($properties);
+        }
+
         Requirements::css('nswdpc/silverstripe-linkfield: client/dist/linkfield.css');
         $field = $this->getLinkManagementField();
         return $field->Field();
@@ -153,6 +245,10 @@ class LinkField extends FormField
     #[\Override]
     public function handleRequest(HTTPRequest $request)
     {
+        if ($delegate = $this->getMigratedDelegate()) {
+            return $delegate->handleRequest($request);
+        }
+
         return match ($this->isOneOrMany()) {
             'one' => $this->getHasOneField()->handleRequest($request),
             'many' => $this->getManyField()->handleRequest($request),
@@ -275,6 +371,10 @@ class LinkField extends FormField
     #[\Override]
     public function validate(): ValidationResult
     {
+        if ($delegate = $this->getMigratedDelegate()) {
+            return $delegate->validate();
+        }
+
         return $this->getLinkManagementField()->validate();
     }
 }

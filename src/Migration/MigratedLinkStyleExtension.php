@@ -1,0 +1,29 @@
+<?php
+
+namespace gorriecoe\LinkField\Migration;
+
+use SilverStripe\Core\Extension;
+
+/**
+ * Adds a SelectedStyle field to core silverstripe/linkfield Link records, so
+ * that gorriecoe\Link\Models\Link::SelectedStyle - which has no equivalent
+ * anywhere in core's Link model or subclasses - is preserved across
+ * migration rather than being silently dropped.
+ *
+ * Applied to core's Link (and therefore every subclass, since the field is
+ * declared on the base table) via config. If a project doesn't use
+ * SelectedStyle at all, this extension can be removed via config:
+ *
+ * SilverStripe\LinkField\Models\Link:
+ *   extensions:
+ *     MigratedLinkStyleExtension: null
+ *
+ *
+ * @extends Extension<\SilverStripe\LinkField\Models\Link>
+ */
+class MigratedLinkStyleExtension extends Extension
+{
+    private static array $db = [
+        'SelectedStyle' => 'Varchar',
+    ];
+}
