@@ -4,6 +4,7 @@ namespace gorriecoe\LinkField\Migration;
 
 use SilverStripe\Core\Extension;
 use SilverStripe\LinkField\Models\Link as CoreLink;
+use SilverStripe\ORM\Filters\ExactMatchFilter;
 
 /**
  * Applied to gorriecoe\Link\Models\Link. Tracks whether an old Link record has
@@ -27,6 +28,10 @@ class LinkMigrationExtension extends Extension
     ];
 
     private static array $summary_fields = [
-        'IsMigrated' => 'Migrated?',
+        'IsMigrated.Nice' => 'Migrated?',
+    ];
+
+    private static array $searchable_fields = [
+        'IsMigrated' => ExactMatchFilter::class,
     ];
 }
