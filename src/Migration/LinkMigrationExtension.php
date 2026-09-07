@@ -30,6 +30,7 @@ class LinkMigrationExtension extends Extension
     ];
 
     private static array $summary_fields = [
+        'ID' => '#',
         'IsMigrated.Nice' => 'Migrated?',
     ];
 
