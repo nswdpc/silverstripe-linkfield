@@ -141,7 +141,7 @@ class LinkField extends FormField
         }
 
         $this->migratedDelegate = CoreLinkField::create($this->name, $this->title)
-            ->setForm($this->parent->Form)
+            ->setForm($this->getForm())
             ->setValue($oldLink->MigratedLinkID);
 
         return $this->migratedDelegate;
