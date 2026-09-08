@@ -184,7 +184,7 @@ class MyPage extends Page
         // Display field based on which link class is returned
         // If the core button is populated before a migration takes place, this will be preferred
         $button = $this->getButton();
-        if($button instanceof CoreButton) {
+        if($button instanceof CoreLink) {
             $linkField = CoreLinkField::create('CoreButton', 'Button');
         } else {
             $linkField = LinkField::create('Button', 'Button', $this);
