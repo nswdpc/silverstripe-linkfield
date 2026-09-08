@@ -184,7 +184,7 @@ class MyPage extends Page
         // Display field based on which link class is returned
         // If the core button is populated before a migration takes place, this will be preferred
         $button = $this->getButton();
-        if(button instanceof CoreButton) {
+        if($button instanceof CoreButton) {
             $linkField = CoreLinkField::create('CoreButton', 'Button');
         } else {
             $linkField = LinkField::create('Button', 'Button', $this);
@@ -203,7 +203,7 @@ class MyPage extends Page
      */
     public function getButton(): null|CoreLink|Link
     {
-        $coreButton = this->CoreButton();
+        $coreButton = $this->CoreButton();
         if($coreButton && $coreButton->isInDB()) {
             return $coreButton;
         }
@@ -332,7 +332,7 @@ class MyPage extends Page
             return $coreButtons;
         }
         
-        $result = \SilverStripe\ORM\ArrayList::create();
+        $result = \SilverStripe\Model\List\ArrayList::create();
         // get all new 'core' button links
         foreach($coreButtons as $coreButton) {
             $result->push($coreButton);
