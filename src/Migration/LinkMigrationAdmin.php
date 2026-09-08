@@ -41,6 +41,7 @@ class LinkMigrationAdmin extends ModelAdmin
             $columns->setDisplayFields($displayFields);
         }
 
+        $config->addComponent(GridFieldLinkOwnerColumn::create());
         $config->addComponent(GridFieldMigrateLinkButton::create());
         $config->addComponent(GridFieldMigrateAllLinksButton::create());
 
