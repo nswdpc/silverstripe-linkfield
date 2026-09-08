@@ -183,9 +183,10 @@ class MyPage extends Page
         $fields = parent::getCMSFields();
         // Keep the legacy field visible until CoreButton is populated for
         // this record, then core's own field takes over automatically.
-        $fields->addFieldToTab('Root.Main', $this->CoreButtonID
-            ? CoreLinkField::create('CoreButton', 'Button')
-            : LinkField::create('Button', 'Button', $this));
+        $fields->addFieldToTab(
+            'Root.Main',
+            $this->CoreButtonID ? CoreLinkField::create('CoreButton', 'Button') : LinkField::create('Button', 'Button', $this)
+        );
         return $fields;
     }
 
@@ -273,18 +274,23 @@ class MyPage extends Page
     public function getCMSFields()
     {
         $fields = parent::getCMSFields();
-        $coreButtons = $this->CoreButtons();
-        if($coreButtons && $coreButtons->count() > 0) {
-            $fields->addFieldToTab(
-                'Root.Main',
-                CoreMultiLinkField::create(
-                    'CoreButtons',
-                    'Buttons'
-                )
-            );
-        } else {
-            // Keep the legacy GridField around too until every row on this
-            // relation has been migrated, then remove it from the CMS.
+
+        // The new field is always shown, so a CMS author can migrate
+        // (via LinkMigrationAdmin) and immediately manage the result here.
+        $fields->addFieldToTab(
+            'Root.Main',
+            CoreMultiLinkField::create(
+                'CoreButtons',
+                'Buttons'
+            )
+        );
+
+        // Links migrate one at a time, not all at once for the whole
+        // relation - so the legacy field must stay visible (and usable)
+        // for as long as any old row on this relation hasn't been migrated
+        // yet, not just until the first one has. Once none remain, drop it.
+        $hasUnmigratedButtons = $this->Buttons()->filter(['IsMigrated' => 0])->count() > 0;
+        if ($hasUnmigratedButtons) {
             $fields->addFieldToTab(
                 'Root.Main',
                 LinkField::create(
@@ -292,21 +298,31 @@ class MyPage extends Page
                 )
             );
         }
+
         return $fields;
     }
 
     /**
-     * Return either the migrated button links (Core in this example)
-     * or the original button links
+     * Migrated old rows are replaced by their core equivalent, in the
+     * original sort order; not-yet-migrated old rows keep appearing as-is,
+     * since a many_many relation's rows migrate one at a time rather than
+     * all together. Use this (not Buttons()/CoreButtons() directly)
+     * anywhere the collection is consumed - templates, controllers, other
+     * modules.
+     * Each record in the ArrayList will either be a Link or CoreLink record
      */
     public function getButtons(): \SilverStripe\ORM\ArrayList
     {
-        $coreButtons = $this->CoreButtons();
-        if($coreButtons && $coreButtons->count() > 0) {
-            return $coreButtons;
-        } else {
-            return $this->getManyManyComponents('Buttons');
+        $result = \SilverStripe\ORM\ArrayList::create();
+        $oldLinks = $this->getManyManyComponents('Buttons')->sort(['Sort' => 'ASC']);
+        foreach ($oldLinks as $oldLink) {
+            $link = $oldLink;
+            if($oldLink->IsMigrated == 1 && (($migratedLink = $oldLink->MigratedLink()) && $migratedLink->isInDB())) {
+                $link = $migratedLink;
+            }
         }
+        $result->push($migratedLink);
+        return $result;
     }
 }
 ```
