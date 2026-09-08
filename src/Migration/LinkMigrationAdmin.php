@@ -38,7 +38,6 @@ class LinkMigrationAdmin extends ModelAdmin
         $columns = $config->getComponentByType(GridFieldDataColumns::class);
         if ($columns) {
             $displayFields = $columns->getDisplayFields($gridField);
-            $displayFields['IsMigrated'] = _t(__CLASS__ . '.MIGRATED_COLUMN', 'Migrated?');
             $columns->setDisplayFields($displayFields);
         }
 
