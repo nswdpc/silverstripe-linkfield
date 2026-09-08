@@ -92,7 +92,7 @@ class GridFieldMigrateLinkButton extends AbstractGridFieldComponent implements G
             'migratelink',
             ['RecordID' => $record->ID]
         )
-            ->addExtraClass('btn btn-secondary')
+            ->addExtraClass('btn btn-primary')
             ->setAttribute('classNames', 'action--migrate-link');
 
         return $field->Field();
