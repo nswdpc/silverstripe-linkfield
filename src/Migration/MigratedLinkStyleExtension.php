@@ -3,6 +3,8 @@
 namespace gorriecoe\LinkField\Migration;
 
 use SilverStripe\Core\Extension;
+use SilverStripe\Core\Convert;
+use SilverStripe\Forms\FieldList;
 
 /**
  * Adds a SelectedStyle field to core silverstripe/linkfield Link records, so
@@ -26,4 +28,23 @@ class MigratedLinkStyleExtension extends Extension
     private static array $db = [
         'SelectedStyle' => 'Varchar',
     ];
+
+    public function updateCmsFields(FieldList $fields)
+    {
+        $selectedStyleField = $fields->dataFieldByName('SelectedStyle');
+        if($selectedStyleField) {
+            $fields->insertAfter(
+                'OpenInNewWindow',
+                $selectedStyleField->setTitle(
+                    _t('linkfield.SELECT_STYLE_FIELD_TITLE', 'Custom link style(s) for CSS')
+                )
+            );
+        }
+
+    }
+
+    public function getSelectedStyle()
+    {
+        return Convert::raw2htmlatt(trim($this->getOwner()->SelectedStyle ?? ''));
+    }
 }
