@@ -181,11 +181,17 @@ class MyPage extends Page
     public function getCMSFields()
     {
         $fields = parent::getCMSFields();
-        // Keep the legacy field visible until CoreButton is populated for
-        // this record, then core's own field takes over automatically.
+        // Display field based on which link class is returned
+        // If the core button is populated before a migration takes place, this will be preferred
+        $button = $this->getButton();
+        if(button instanceof CoreButton) {
+            $linkField = CoreLinkField::create('CoreButton', 'Button');
+        } else {
+            $linkField = LinkField::create('Button', 'Button', $this);
+        }
         $fields->addFieldToTab(
             'Root.Main',
-            $this->CoreButtonID ? CoreLinkField::create('CoreButton', 'Button') : LinkField::create('Button', 'Button', $this)
+            $linkField
         );
         return $fields;
     }
@@ -197,8 +203,9 @@ class MyPage extends Page
      */
     public function getButton(): null|CoreLink|Link
     {
-        if ($this->CoreButtonID) {
-            return $this->CoreButton();
+        $coreButton = this->CoreButton();
+        if($coreButton && $coreButton->isInDB()) {
+            return $coreButton;
         }
         return $this->getComponent('Button');
     }
@@ -294,7 +301,11 @@ class MyPage extends Page
             $fields->addFieldToTab(
                 'Root.Main',
                 LinkField::create(
-                    'Buttons', 'Buttons', $this
+                    'Buttons',
+                    'Buttons',
+                    $this
+                )->setDescription(
+                    "Displays all legacy buttons, including those migrated"
                 )
             );
         }
@@ -311,18 +322,29 @@ class MyPage extends Page
      * modules.
      * Each record in the ArrayList will either be a Link or CoreLink record
      */
-    public function getButtons(): \SilverStripe\ORM\ArrayList
+    public function getButtons(): \SilverStripe\Model\List\SS_List
     {
-        $result = \SilverStripe\ORM\ArrayList::create();
-        $oldLinks = $this->getManyManyComponents('Buttons')->sort(['Sort' => 'ASC']);
-        foreach ($oldLinks as $oldLink) {
-            $link = $oldLink;
-            if($oldLink->IsMigrated == 1 && (($migratedLink = $oldLink->MigratedLink()) && $migratedLink->isInDB())) {
-                $link = $migratedLink;
-            }
+
+        $coreButtons = $this->CoreButtons()->sort(['Sort' => 'ASC']);
+        $unmigratedButtons = $this->Buttons()->filter(['IsMigrated' => 0]);
+        if($unmigratedButtons->count() == 0) {
+            // all migrated, show all core button links found
+            return $coreButtons;
         }
-        $result->push($migratedLink);
-        return $result;
+        
+        $result = \SilverStripe\ORM\ArrayList::create();
+        // get all new 'core' button links
+        foreach($coreButtons as $coreButton) {
+            $result->push($coreButton);
+        }
+        // add on any unmigrated buttons
+        foreach($unmigratedButtons as $unmigratedButton) {
+            // not yet migrated
+            $result->push($unmigratedButton);
+        }
+        
+        // return sorted result
+        return $result->sort(['Sort' => 'ASC']);
     }
 }
 ```
