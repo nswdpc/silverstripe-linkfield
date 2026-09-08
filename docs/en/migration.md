@@ -1,8 +1,8 @@
-# Task: Incremental migration path from gorriecoe LinkField to silverstripe/linkfield
+# Task: Incremental migration path from gorriecoe Link/LinkField to silverstripe/linkfield
 
 ## Context
 
-This project is `nswdpc/silverstripe-linkfield` (fork of `gorriecoe/silverstripe-linkfield`, `ss6` branch), with the following installed as vendor modules:
+This project is `nswdpc/silverstripe-linkfield` (fork of `gorriecoe/silverstripe-linkfield`, `ss6` branch), with the following requirements:
 
 - `gorriecoe/silverstripe-link` — the fork at `nswdpc/silverstripe-link` (`ss6` branch), providing
   `gorriecoe\Link\Models\Link`, a single flat DataObject with a `Type` column (`URL`/`Email`/`Phone`/`File`/`SiteTree`).
@@ -16,34 +16,16 @@ itself, and without depending on core's own deprecated `GorriecoeMigrationTask` 
 destructive operation — drops the shared old `Link` table in the same transaction — which is exactly the
 all-or-nothing behaviour we're trying to avoid).
 
-## Architecture: parallel relations, not an in-place repoint
-
-An earlier iteration of this module repointed a relation's *existing* `has_one` in place — i.e. migrated data
-out of the old `Link` table into a new core `Link` row, then had the same owner column (`{relation}ID`) serve
-double duty for both the old and new relation depending on whether the project had repointed its `has_one`
-config yet. That approach was abandoned after review surfaced several compounding correctness problems:
-
-- The owner's `{relation}ID` column is genuinely shared between the old and new relation until the config
-  repoint happens, so there is a real, unavoidable window (however brief) where the relation resolves against
-  the wrong table — either because the FK hasn't been re-synced onto the new record yet, or because core's own
-  `AbstractLinkField::saveInto()` unconditionally writes `{relation}ID` the moment its field renders, regardless
-  of whether the has_one has actually been repointed.
-- Fixing that window safely required surgical raw-SQL updates to both the Draft and Live tables of a Versioned
-  owner (to avoid ORM writes accidentally publishing unrelated pending Draft changes), correctly targeting
-  whichever physical table a class-table-inheritance column actually lives on — real complexity for what should
-  be a purely additive migration.
-- Even done correctly, the repoint is a class-wide, all-rows-at-once cutover coupled to a code deploy, which
-  reintroduces exactly the kind of "flag day" this project set out to avoid.
+## How to migrate
 
 **The chosen design instead uses two independent, permanently-separate relations.** A project adds a brand new
 has_one relation on the owning class (e.g. `CoreButton` alongside an existing `Button`) that has *always*
-pointed at core's `SilverStripe\LinkField\Models\Link`, and a small getter (e.g. `getButton()`) that returns the
-migrated Link if one exists, falling back to the old relation otherwise. The old relation, its column, and its
-data are never touched. This module's job shrinks to exactly what it should be: locate the old Link's owner,
-create/map the equivalent core Link, and point the *new* dedicated relation at it — nothing shared, nothing to
-repoint, nothing that can collide.
+points at core's `SilverStripe\LinkField\Models\Link`, and a small getter (e.g. `getButton()`) that returns the
+migrated Link if one exists, falling back to the old relation otherwise.
 
-This has real, structural safety properties the in-place approach could never fully guarantee:
+The old relation, its column, and its data are never touched. This module's job shrinks to exactly what it should be: locate the old Link's owner, create/map the equivalent core Link, and point the *new* dedicated relation at it — nothing shared, nothing to repoint, nothing that can collide.
+
+This migration path has structural safety properties:
 
 - **No ID collisions.** The new relation's column has never held any other value, so setting it is a plain,
   isolated has_one assignment — regardless of whether other, unrelated relations elsewhere in the project are
@@ -60,7 +42,7 @@ This has real, structural safety properties the in-place approach could never fu
   module whenever convenient, arbitrarily deferred, with no correctness cost in the meantime — just minor
   schema clutter.
 
-The cost is genuine and worth naming: every call site that currently reads the relation directly
+The cost is genuine and worth naming: every call location that currently reads the relation directly
 (`$record->Button()`, `$record->ButtonID`, a template's `$Button`) has to be found and switched to the fallback
 getter, or migrated records simply won't render via the new path anywhere except where that switch has been
 made. That's real, possibly wide-reaching work — but it's *safe* incremental work (each call site conversion is
@@ -68,7 +50,7 @@ independently low-risk and reversible), not a data-correctness gamble, and each 
 its own template/theme quirks with bespoke getters rather than this module trying to build one generic mechanism
 to cover every usage pattern.
 
-## What this module provides — and what it deliberately doesn't
+### What this module provides — and what it deliberately doesn't
 
 This module (`src/Migration/`) is scoped to **data migration and bookkeeping only**. It does not attempt to
 change rendering, does not add any CMS-field delegation, and does not know or care how a project's templates or
@@ -157,11 +139,15 @@ All five original "unresolved facts" below were investigated directly against th
    checks and owner back-references on every migrated Link. `LinkMigrator::migrate()` therefore resolves the
    target relation via `$relation_map` and stores *that* name on `OwnerRelation`.
 
-## Worked example: migrating a has_one relation
+### Worked example: migrating a has_one relation
 
 Say `MyPage` currently has:
 
 ```php
+
+use gorriecoe\Link\Models\Link;
+use gorriecoe\LinkField\LinkField;
+
 class MyPage extends Page
 {
     private static array $has_one = [
@@ -180,11 +166,16 @@ class MyPage extends Page
 **Step 1 — add the new, dedicated relation and getter.** This is a normal, safe, additive code change:
 
 ```php
+use gorriecoe\Link\Models\Link;
+use gorriecoe\LinkField\LinkField;
+use SilverStripe\LinkField\Models\Link as CoreLink;
+use SilverStripe\LinkField\Form\LinkField as CoreLinkField;
+
 class MyPage extends Page
 {
     private static array $has_one = [
-        'Button' => \gorriecoe\Link\Models\Link::class,
-        'CoreButton' => \SilverStripe\LinkField\Models\Link::class,
+        'Button' => Link::class,
+        'CoreButton' => CoreLink::class, // you can name this relation anything, update usage if so
     ];
 
     public function getCMSFields()
@@ -193,7 +184,7 @@ class MyPage extends Page
         // Keep the legacy field visible until CoreButton is populated for
         // this record, then core's own field takes over automatically.
         $fields->addFieldToTab('Root.Main', $this->CoreButtonID
-            ? \SilverStripe\LinkField\Form\LinkField::create('CoreButton', 'Button')
+            ? CoreLinkField::create('CoreButton', 'Button')
             : LinkField::create('Button', 'Button', $this));
         return $fields;
     }
@@ -203,12 +194,12 @@ class MyPage extends Page
      * legacy gorriecoe Link otherwise. Use this (not Button()/ButtonID)
      * anywhere the link is consumed - templates, controllers, other modules.
      */
-    public function getButton(): ?\SilverStripe\LinkField\Models\Link|\gorriecoe\Link\Models\Link
+    public function getButton(): null|CoreLink|Link
     {
         if ($this->CoreButtonID) {
             return $this->CoreButton();
         }
-        return $this->Button();
+        return $this->getComponent('Button');
     }
 }
 ```
@@ -234,7 +225,9 @@ Nothing above requires raw SQL, transactions, or coordinating with a code deploy
 single independent, idempotent operation, safe to retry, and safe to run indefinitely alongside records that
 haven't been migrated yet.
 
-## Worked example: migrating a many_many relation
+### Worked example: migrating a many_many relation
+
+> The migration does not support `gorriecoe\Link\Models\Link` records in a has_many relation as this is specifically not recommended in usage documentation. 
 
 Core has no `many_many`/`belongs_many_many` concept for Link at all - its "many" pattern is a `has_many` using
 its own `Owner` dot-relation, scaffolded via `Link::scaffoldFormFieldForHasMany()` as `MultiLinkField`. So a
@@ -242,6 +235,9 @@ migrated `many_many` relation maps onto that has_many/`MultiLinkField` shape, pe
 relation maps onto a `has_one`/`LinkField`. Say `MyPage` currently has:
 
 ```php
+
+use gorriecoe\Link\Models\Link;
+
 class MyPage extends Page
 {
     private static array $many_many = [
@@ -256,43 +252,61 @@ class MyPage extends Page
 **Step 1 — add the new, dedicated has_many relation and a merging getter:**
 
 ```php
+
+use gorriecoe\Link\Models\Link;
+use gorriecoe\LinkField\LinkField;
+use SilverStripe\LinkField\Models\Link as CoreLink;
+use SilverStripe\LinkField\Form\MultiLinkField as CoreMultiLinkField;
+
 class MyPage extends Page
 {
     private static array $many_many = [
-        'Buttons' => \gorriecoe\Link\Models\Link::class,
+        'Buttons' => Link::class,
     ];
     private static array $many_many_extraFields = [
         'Buttons' => ['Sort' => 'Int'],
     ];
     private static array $has_many = [
-        'CoreButtons' => \SilverStripe\LinkField\Models\Link::class . '.Owner',
+        'CoreButtons' => CoreLink::class . '.Owner',
     ];
 
     public function getCMSFields()
     {
         $fields = parent::getCMSFields();
-        $fields->addFieldToTab('Root.Main', MultiLinkField::create('CoreButtons', 'Buttons'));
-        // Keep the legacy GridField around too until every row on this
-        // relation has been migrated, then remove it from the CMS.
-        $fields->addFieldToTab('Root.Main', LinkField::create('Buttons', 'Buttons (legacy)', $this));
+        $coreButtons = $this->CoreButtons();
+        if($coreButtons && $coreButtons->count() > 0) {
+            $fields->addFieldToTab(
+                'Root.Main',
+                CoreMultiLinkField::create(
+                    'CoreButtons',
+                    'Buttons'
+                )
+            );
+        } else {
+            // Keep the legacy GridField around too until every row on this
+            // relation has been migrated, then remove it from the CMS.
+            $fields->addFieldToTab(
+                'Root.Main',
+                LinkField::create(
+                    'Buttons', 'Buttons', $this
+                )
+            );
+        }
         return $fields;
     }
 
     /**
-     * Migrated old rows are replaced by their core equivalent, in the
-     * original sort order; not-yet-migrated old rows keep appearing as-is.
-     * Use this (not Buttons()/CoreButtons() directly) anywhere the
-     * collection is consumed - templates, controllers, other modules.
+     * Return either the migrated button links (Core in this example)
+     * or the original button links
      */
     public function getButtons(): \SilverStripe\ORM\ArrayList
     {
-        $result = \SilverStripe\ORM\ArrayList::create();
-        foreach ($this->Buttons()->sort('Sort') as $oldLink) {
-            $result->push($oldLink->IsMigrated && $oldLink->MigratedLink()->exists()
-                ? $oldLink->MigratedLink()
-                : $oldLink);
+        $coreButtons = $this->CoreButtons();
+        if($coreButtons && $coreButtons->count() > 0) {
+            return $coreButtons;
+        } else {
+            return $this->getManyManyComponents('Buttons');
         }
-        return $result;
     }
 }
 ```
