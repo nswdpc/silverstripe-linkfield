@@ -67,7 +67,7 @@ class GridFieldMigrateLinkButton extends AbstractGridFieldComponent implements G
 
         $owners = $this->getLocator()->findOwners($record);
         if (count($owners) === 0) {
-            return _t(__CLASS__ . '.NO_OWNER', 'No has_one owner found');
+            return _t(__CLASS__ . '.NO_OWNER', 'No owner found');
         }
         if (count($owners) > 1) {
             return _t(__CLASS__ . '.AMBIGUOUS_OWNER', 'Linked from multiple owners - migrate individually');
@@ -81,7 +81,7 @@ class GridFieldMigrateLinkButton extends AbstractGridFieldComponent implements G
         if (!$this->getMigrator()->canMigrate($owner, $owners[0]['relation'])) {
             return _t(
                 __CLASS__ . '.NOT_ENABLED',
-                'Not yet enabled for migration - see LinkMigrator::$relation_map'
+                'Not yet enabled for migration - see documentation'
             );
         }
 
@@ -135,7 +135,7 @@ class GridFieldMigrateLinkButton extends AbstractGridFieldComponent implements G
         if (!$this->getMigrator()->canMigrate($owner, $owners[0]['relation'])) {
             throw ValidationException::create(_t(
                 __CLASS__ . '.NOT_ENABLED_ACTION',
-                'This relation is not yet enabled for migration - see LinkMigrator::$relation_map'
+                'This relation is not yet enabled for migration - see documentation'
             ));
         }
 
