@@ -40,7 +40,7 @@ class LinkOwnerLocatorTest extends SapphireTest
         $this->assertSame([], $found);
     }
 
-    public function testDoesNotMatchManyManyRelations(): void
+    public function testFindsManyManyOwnerWhenSinglyOwned(): void
     {
         $owner = MigrationTestOwner::create();
         $owner->write();
@@ -49,10 +49,29 @@ class LinkOwnerLocatorTest extends SapphireTest
         $oldLink->write();
         $owner->Buttons()->add($oldLink, ['Sort' => 1]);
 
-        // many_many is not a has_one, so the locator (which only scans
-        // has_one config) correctly finds no owner for it.
         $found = (new LinkOwnerLocator())->findOwners($oldLink);
 
-        $this->assertSame([], $found);
+        $this->assertCount(1, $found);
+        $this->assertSame($owner->ID, $found[0]['owner']->ID);
+        $this->assertSame('Buttons', $found[0]['relation']);
+    }
+
+    public function testFindsBothOwnersWhenManyManyLinkIsGenuinelyShared(): void
+    {
+        $ownerA = MigrationTestOwner::create();
+        $ownerA->write();
+        $ownerB = MigrationTestOwner::create();
+        $ownerB->write();
+
+        $oldLink = OldLink::create(['Type' => 'URL', 'URL' => 'https://example.com']);
+        $oldLink->write();
+        $ownerA->Buttons()->add($oldLink, ['Sort' => 1]);
+        $ownerB->Buttons()->add($oldLink, ['Sort' => 1]);
+
+        $found = (new LinkOwnerLocator())->findOwners($oldLink);
+
+        $this->assertCount(2, $found);
+        $foundOwnerIDs = array_map(fn (array $entry) => $entry['owner']->ID, $found);
+        $this->assertEqualsCanonicalizing([$ownerA->ID, $ownerB->ID], $foundOwnerIDs);
     }
 }

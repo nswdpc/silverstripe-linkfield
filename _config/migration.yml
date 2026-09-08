@@ -15,13 +15,12 @@ SilverStripe\LinkField\Models\Link:
   extensions:
     MigratedLinkStyleExtension: gorriecoe\LinkField\Migration\MigratedLinkStyleExtension
 
+# Nothing actually migrates from here: a project must explicitly map each
+# old relation it wants migrated to a new, dedicated has_one relation it has
+# added pointing at core's Link class. See
+# gorriecoe\LinkField\Migration\LinkMigrator::$relation_map and
+# docs/en/migration.md for a full worked example.
 gorriecoe\LinkField\Migration\LinkMigrator:
   extensions:
     LinkMigratorStyleExtension: gorriecoe\LinkField\Migration\LinkMigratorStyleExtension
-
-# Nothing actually migrates or changes rendering behaviour from here: a
-# project must explicitly allow-list each relation it wants migrated. See
-# gorriecoe\LinkField\LinkField::$migrated_relations and docs/en/migration.md for a
-# full worked example (including the required has_one config override).
-gorriecoe\LinkField\LinkField:
-  migrated_relations: []
+  relation_map: []

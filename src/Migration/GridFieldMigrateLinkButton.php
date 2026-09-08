@@ -78,6 +78,13 @@ class GridFieldMigrateLinkButton extends AbstractGridFieldComponent implements G
             return _t(__CLASS__ . '.NO_PERMISSION', 'No permission');
         }
 
+        if (!$this->getMigrator()->canMigrate($owner, $owners[0]['relation'])) {
+            return _t(
+                __CLASS__ . '.NOT_ENABLED',
+                'Not yet enabled for migration - see LinkMigrator::$relation_map'
+            );
+        }
+
         $field = GridField_FormAction::create(
             $gridField,
             'MigrateLink' . $record->ID,
@@ -123,6 +130,13 @@ class GridFieldMigrateLinkButton extends AbstractGridFieldComponent implements G
         $owner = $owners[0]['owner'];
         if (!$owner->canEdit()) {
             throw ValidationException::create(_t(__CLASS__ . '.EDIT_PERMISSIONS_FAILURE', 'No permission to migrate this link'));
+        }
+
+        if (!$this->getMigrator()->canMigrate($owner, $owners[0]['relation'])) {
+            throw ValidationException::create(_t(
+                __CLASS__ . '.NOT_ENABLED_ACTION',
+                'This relation is not yet enabled for migration - see LinkMigrator::$relation_map'
+            ));
         }
 
         $this->getMigrator()->migrate($link, $owner, $owners[0]['relation']);
