@@ -1,0 +1,27 @@
+---
+Name: linkfieldmigration
+---
+# Adds IsMigrated/MigratedLink tracking to the old gorriecoe Link model.
+# Purely additive - existing columns/behaviour are untouched.
+gorriecoe\Link\Models\Link:
+  extensions:
+    LinkMigrationExtension: gorriecoe\LinkField\Migration\LinkMigrationExtension
+
+# Carries gorriecoe's SelectedStyle field forward onto migrated core Links,
+# since core's Link model has no equivalent field. Remove this (and the
+# LinkMigratorStyleExtension below) via project config if you don't use
+# SelectedStyle and don't want the extra column on core's Link table.
+SilverStripe\LinkField\Models\Link:
+  extensions:
+    MigratedLinkStyleExtension: gorriecoe\LinkField\Migration\MigratedLinkStyleExtension
+    MethodCompatibilityExtension: gorriecoe\LinkField\Migration\MethodCompatibilityExtension
+
+# Nothing actually migrates from here: a project must explicitly map each
+# old relation it wants migrated to a new, dedicated has_one relation it has
+# added pointing at core's Link class. See
+# gorriecoe\LinkField\Migration\LinkMigrator::$relation_map and
+# docs/en/migration.md for a full worked example.
+gorriecoe\LinkField\Migration\LinkMigrator:
+  extensions:
+    LinkMigratorStyleExtension: gorriecoe\LinkField\Migration\LinkMigratorStyleExtension
+  relation_map: []
