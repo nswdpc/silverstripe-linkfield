@@ -165,6 +165,8 @@ class MyPage extends Page
 
 **Step 1 — add the new, dedicated relation and getter.** This is a normal, safe, additive code change:
 
+> In this example the new relation(s) are prefixed "Core". You can used any prefix but you must update wherever the relation is used to reference the updated prefix. The chosen name will be retained post-migration.
+
 ```php
 use gorriecoe\Link\Models\Link;
 use gorriecoe\LinkField\LinkField;
@@ -411,8 +413,40 @@ The intended lifecycle of this migration is as follows:
 
 1. Projects and modules wishing to migration Link records install this module at the relevant tag
 2. They configure their links for migration via `relation_map`, the field usage and custom getter handling
-3. This change is deployed and configured links are migrated
+3. This change is deployed and configured links are migrated (see above 'migrate records')
 4. Once migration is complete:
-    1. Remove references to this module's Link and LinkField in code, including relations
+    1. Remove references to this module's Link and LinkField in code, including relations. Retain any custom getters (e.g getButton) if required e.g. your templates reference `$Button`, but remove references to this module's model, relations and field. Highly recommended to run static analysis at this stage.
     2. Remove migration configuration
     3. Optionally remove this module and optionally `nswdpc/silverstripe-link` as a requirement in project/module. If the modules are removed, complete obsolete database table cleanup (for Link table).
+
+### Example code post-migration
+
+> Note that the new relation names are used.
+
+```php
+<?php
+
+    //---
+
+    /**
+     * Return the core linkfield only
+     */
+    public function getCMSFields()
+    {
+        $fields = parent::getCMSFields();
+        $linkField = CoreLinkField::create('CoreButton', 'Button');
+        $fields->addFieldToTab(
+            'Root.Main',
+            $linkField
+        );
+        return $fields;
+    }
+    
+    /**
+     * Return the new link relation
+     */
+    public function getButton(): ?CoreLink
+    {
+        return $this->CoreButton();
+    }
+```
