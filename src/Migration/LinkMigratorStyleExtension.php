@@ -12,7 +12,7 @@ use SilverStripe\LinkField\Models\Link as CoreLink;
  * to LinkMigrator via config, alongside MigratedLinkStyleExtension.
  *
  *
- * @extends Extension<LinkMigrator>
+ * @extends \SilverStripe\Core\Extension<(\gorriecoe\LinkField\Migration\LinkMigrator & static)>
  */
 class LinkMigratorStyleExtension extends Extension
 {

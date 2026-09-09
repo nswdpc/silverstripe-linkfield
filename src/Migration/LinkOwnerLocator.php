@@ -103,10 +103,11 @@ class LinkOwnerLocator
             // Querying every candidate class (not just base data classes) can
             // revisit the same actual row via more than one ancestor class -
             // dedupe on the owner's real class + ID + relation.
-            $key = get_class($owner) . '|' . $owner->ID . '|' . $relation;
+            $key = $owner::class . '|' . $owner->ID . '|' . $relation;
             if (isset($seen[$key])) {
                 continue;
             }
+
             $seen[$key] = true;
             $found[] = ['owner' => $owner, 'relation' => $relation];
         }

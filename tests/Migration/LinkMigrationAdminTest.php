@@ -36,6 +36,7 @@ class LinkMigrationAdminTest extends SapphireTest
 
         $oldLink = OldLink::create(['Type' => 'URL', 'URL' => 'https://example.com']);
         $oldLink->write();
+
         $owner->ButtonID = $oldLink->ID;
         $owner->write();
 
@@ -53,13 +54,16 @@ class LinkMigrationAdminTest extends SapphireTest
     {
         $ownerA = MigrationTestOwner::create();
         $ownerA->write();
+
         $ownerB = MigrationTestOwner::create();
         $ownerB->write();
 
         $oldLink = OldLink::create(['Type' => 'URL', 'URL' => 'https://example.com']);
         $oldLink->write();
+
         $ownerA->ButtonID = $oldLink->ID;
         $ownerA->write();
+
         $ownerB->ButtonID = $oldLink->ID;
         $ownerB->write();
 
@@ -79,6 +83,7 @@ class LinkMigrationAdminTest extends SapphireTest
 
         $oldLink = OldLink::create(['Type' => 'URL', 'URL' => 'https://example.com']);
         $oldLink->write();
+
         $owner->ButtonID = $oldLink->ID;
         $owner->write();
 
@@ -96,6 +101,7 @@ class LinkMigrationAdminTest extends SapphireTest
 
         $oldLink = OldLink::create(['Type' => 'URL', 'URL' => 'https://example.com']);
         $oldLink->write();
+
         $owner->ButtonID = $oldLink->ID;
         $owner->write();
 
@@ -125,6 +131,7 @@ class LinkMigrationAdminTest extends SapphireTest
     {
         $ownerA = MigrationTestOwner::create();
         $ownerA->write();
+
         $ownerB = MigrationTestOwner::create();
         $ownerB->write();
 

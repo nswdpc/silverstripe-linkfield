@@ -20,6 +20,7 @@ class LinkOwnerLocatorTest extends SapphireTest
 
         $oldLink = OldLink::create(['Type' => 'URL', 'URL' => 'https://example.com']);
         $oldLink->write();
+
         $owner->ButtonID = $oldLink->ID;
         $owner->write();
 
@@ -60,6 +61,7 @@ class LinkOwnerLocatorTest extends SapphireTest
     {
         $ownerA = MigrationTestOwner::create();
         $ownerA->write();
+
         $ownerB = MigrationTestOwner::create();
         $ownerB->write();
 

@@ -20,11 +20,8 @@ use SilverStripe\Forms\GridField\GridField_HTMLProvider;
  */
 class GridFieldMigrateAllLinksButton extends AbstractGridFieldComponent implements GridField_HTMLProvider, GridField_ActionProvider
 {
-    protected string $targetFragment;
-
-    public function __construct(string $targetFragment = 'buttons-before-right')
+    public function __construct(protected string $targetFragment = 'buttons-before-right')
     {
-        $this->targetFragment = $targetFragment;
     }
 
     public function getHTMLFragments($gridField)
@@ -32,7 +29,7 @@ class GridFieldMigrateAllLinksButton extends AbstractGridFieldComponent implemen
         $button = GridField_FormAction::create(
             $gridField,
             'migratealllinks',
-            _t(__CLASS__ . '.MIGRATE_ALL', 'Migrate all eligible links'),
+            _t(self::class . '.MIGRATE_ALL', 'Migrate all eligible links'),
             'migratealllinks',
             []
         );

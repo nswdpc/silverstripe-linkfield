@@ -17,7 +17,10 @@ use SilverStripe\ORM\Filters\ExactMatchFilter;
  * before for any relation that hasn't been migrated.
  *
  *
- * @extends Extension<\gorriecoe\Link\Models\Link>
+ * @extends \SilverStripe\Core\Extension<(\gorriecoe\Link\Models\Link & static)>
+ * @property bool $IsMigrated
+ * @property int $MigratedLinkID
+ * @method \SilverStripe\LinkField\Models\Link MigratedLink()
  */
 class LinkMigrationExtension extends Extension
 {

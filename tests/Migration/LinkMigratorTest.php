@@ -47,6 +47,7 @@ class LinkMigratorTest extends SapphireTest
             'OpenInNewWindow' => true,
         ]);
         $oldLink->write();
+
         $owner->ButtonID = $oldLink->ID;
         $owner->write();
 
@@ -126,6 +127,7 @@ class LinkMigratorTest extends SapphireTest
             'Email' => 'person@example.com',
         ]);
         $oldLink->write();
+
         $owner->ButtonID = $oldLink->ID;
         $owner->write();
 
@@ -145,6 +147,7 @@ class LinkMigratorTest extends SapphireTest
             'Phone' => '+61 2 1234 5678',
         ]);
         $oldLink->write();
+
         $owner->ButtonID = $oldLink->ID;
         $owner->write();
 
@@ -167,6 +170,7 @@ class LinkMigratorTest extends SapphireTest
             'FileID' => $file->ID,
         ]);
         $oldLink->write();
+
         $owner->ButtonID = $oldLink->ID;
         $owner->write();
 
@@ -190,6 +194,7 @@ class LinkMigratorTest extends SapphireTest
             'Anchor' => '#section-2',
         ]);
         $oldLink->write();
+
         $owner->ButtonID = $oldLink->ID;
         $owner->write();
 
@@ -215,6 +220,7 @@ class LinkMigratorTest extends SapphireTest
             'Anchor' => '?option1=value',
         ]);
         $oldLink->write();
+
         $owner->ButtonID = $oldLink->ID;
         $owner->write();
 
@@ -234,6 +240,7 @@ class LinkMigratorTest extends SapphireTest
             'URL' => 'https://example.com',
         ]);
         $oldLink->write();
+
         $owner->ButtonID = $oldLink->ID;
         $owner->write();
 
@@ -290,6 +297,7 @@ class LinkMigratorTest extends SapphireTest
     {
         $ownerA = MigrationTestOwner::create();
         $ownerA->write();
+
         $ownerB = MigrationTestOwner::create();
         $ownerB->write();
 
@@ -334,6 +342,7 @@ class LinkMigratorTest extends SapphireTest
             'SelectedStyle' => 'primary',
         ]);
         $oldLink->write();
+
         $owner->ButtonID = $oldLink->ID;
         $owner->write();
 

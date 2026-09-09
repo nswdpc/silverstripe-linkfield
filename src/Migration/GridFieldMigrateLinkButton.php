@@ -62,25 +62,26 @@ class GridFieldMigrateLinkButton extends AbstractGridFieldComponent implements G
         }
 
         if ($record->IsMigrated) {
-            return _t(__CLASS__ . '.MIGRATED', 'Migrated');
+            return _t(self::class . '.MIGRATED', 'Migrated');
         }
 
         $owners = $this->getLocator()->findOwners($record);
         if (count($owners) === 0) {
-            return _t(__CLASS__ . '.NO_OWNER', 'No owner found');
+            return _t(self::class . '.NO_OWNER', 'No owner found');
         }
+
         if (count($owners) > 1) {
-            return _t(__CLASS__ . '.AMBIGUOUS_OWNER', 'Linked from multiple owners - migrate individually');
+            return _t(self::class . '.AMBIGUOUS_OWNER', 'Linked from multiple owners - migrate individually');
         }
 
         $owner = $owners[0]['owner'];
         if (!$owner->canEdit()) {
-            return _t(__CLASS__ . '.NO_PERMISSION', 'No permission');
+            return _t(self::class . '.NO_PERMISSION', 'No permission');
         }
 
         if (!$this->getMigrator()->canMigrate($owner, $owners[0]['relation'])) {
             return _t(
-                __CLASS__ . '.NOT_ENABLED',
+                self::class . '.NOT_ENABLED',
                 'Not yet enabled for migration - see documentation'
             );
         }
@@ -88,7 +89,7 @@ class GridFieldMigrateLinkButton extends AbstractGridFieldComponent implements G
         $field = GridField_FormAction::create(
             $gridField,
             'MigrateLink' . $record->ID,
-            _t(__CLASS__ . '.MIGRATE_NOW', 'Migrate now'),
+            _t(self::class . '.MIGRATE_NOW', 'Migrate now'),
             'migratelink',
             ['RecordID' => $record->ID]
         )
@@ -121,7 +122,7 @@ class GridFieldMigrateLinkButton extends AbstractGridFieldComponent implements G
         $owners = $this->getLocator()->findOwners($link);
         if (count($owners) !== 1) {
             throw ValidationException::create(_t(
-                __CLASS__ . '.CANNOT_MIGRATE',
+                self::class . '.CANNOT_MIGRATE',
                 'Cannot migrate this link: expected exactly one has_one owner, found {count}.',
                 ['count' => count($owners)]
             ));
@@ -129,12 +130,12 @@ class GridFieldMigrateLinkButton extends AbstractGridFieldComponent implements G
 
         $owner = $owners[0]['owner'];
         if (!$owner->canEdit()) {
-            throw ValidationException::create(_t(__CLASS__ . '.EDIT_PERMISSIONS_FAILURE', 'No permission to migrate this link'));
+            throw ValidationException::create(_t(self::class . '.EDIT_PERMISSIONS_FAILURE', 'No permission to migrate this link'));
         }
 
         if (!$this->getMigrator()->canMigrate($owner, $owners[0]['relation'])) {
             throw ValidationException::create(_t(
-                __CLASS__ . '.NOT_ENABLED_ACTION',
+                self::class . '.NOT_ENABLED_ACTION',
                 'This relation is not yet enabled for migration - see documentation'
             ));
         }

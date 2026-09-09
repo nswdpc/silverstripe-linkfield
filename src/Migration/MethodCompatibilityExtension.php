@@ -7,7 +7,7 @@ use SilverStripe\LinkField\Models\PhoneLink;
 
 /**
  * Provides method compatibilityh with the `gorriecoe\Link\Models\Link` model
- * @extends Extension<\SilverStripe\LinkField\Models\Link>
+ * @extends \SilverStripe\Core\Extension<(\SilverStripe\LinkField\Models\Link & static)>
  */
 class MethodCompatibilityExtension extends Extension
 {
@@ -35,6 +35,7 @@ class MethodCompatibilityExtension extends Extension
         if($this->getOwner() instanceof PhoneLink) {
             return $this->getOwner()->getURL();
         }
+
         return null;
     }
 }

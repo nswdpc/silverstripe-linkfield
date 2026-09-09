@@ -21,7 +21,8 @@ use SilverStripe\Forms\FieldList;
  *     MigratedLinkStyleExtension: null
  *
  *
- * @extends Extension<\SilverStripe\LinkField\Models\Link>
+ * @extends \SilverStripe\Core\Extension<(\SilverStripe\LinkField\Models\Link & static)>
+ * @property mixed $SelectedStyle
  */
 class MigratedLinkStyleExtension extends Extension
 {

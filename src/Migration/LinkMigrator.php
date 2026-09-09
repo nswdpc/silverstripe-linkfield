@@ -60,6 +60,7 @@ use SilverStripe\Versioned\Versioned;
  * already checked ownership themselves. A genuinely shared Link's old field
  * keeps working unchanged for every owner indefinitely.
  *
+ * @mixin \gorriecoe\LinkField\Migration\LinkMigratorStyleExtension
  */
 class LinkMigrator
 {
@@ -157,7 +158,7 @@ class LinkMigrator
                     . 'many_many/belongs_many_many relation, or no target relation has been configured for it '
                     . 'via LinkMigrator::$relation_map - see docs/en/migration.md.',
                 $relation,
-                get_class($owner)
+                $owner::class
             ));
         }
 
@@ -182,13 +183,13 @@ class LinkMigrator
                         . 'actually be currently attached here at all - see docs/en/migration.md.',
                     $link->ID,
                     $relation,
-                    get_class($owner)
+                    $owner::class
                 ));
             }
 
             $newLink = $this->createMigratedLink($link);
             $newLink->OwnerID = $owner->ID;
-            $newLink->OwnerClass = get_class($owner);
+            $newLink->OwnerClass = $owner::class;
             $newLink->OwnerRelation = $targetRelation;
             $newLink->write();
 
@@ -213,7 +214,7 @@ class LinkMigrator
     protected function getTargetRelation(DataObject $owner, string $relation): ?string
     {
         foreach ((array) static::config()->get('relation_map') as $class => $map) {
-            if (!is_a($owner, $class)) {
+            if (!$owner instanceof $class) {
                 continue;
             }
 
@@ -284,7 +285,7 @@ class LinkMigrator
 
         $only = $owners[0];
         return $only['relation'] === $relation
-            && get_class($only['owner']) === get_class($owner)
+            && $only['owner']::class === $owner::class
             && (int) $only['owner']->ID === (int) $owner->ID;
     }
 
@@ -361,9 +362,11 @@ class LinkMigrator
         if ($value === '') {
             return ['', ''];
         }
+
         if (str_starts_with($value, '#')) {
             return [ltrim($value, '#'), ''];
         }
+
         if (str_starts_with($value, '?')) {
             return ['', ltrim($value, '?')];
         }

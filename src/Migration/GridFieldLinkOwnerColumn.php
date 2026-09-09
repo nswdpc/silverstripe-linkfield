@@ -44,7 +44,7 @@ class GridFieldLinkOwnerColumn extends AbstractGridFieldComponent implements Gri
 
     public function getColumnMetadata($gridField, $columnName)
     {
-        return ['title' => _t(__CLASS__ . '.OWNER_COLUMN', 'Used on')];
+        return ['title' => _t(self::class . '.OWNER_COLUMN', 'Used on')];
     }
 
     /**
@@ -58,11 +58,11 @@ class GridFieldLinkOwnerColumn extends AbstractGridFieldComponent implements Gri
 
         $owners = $this->getLocator()->findOwners($record);
         if (count($owners) === 0) {
-            return _t(__CLASS__ . '.NO_OWNER', 'No owner found');
+            return _t(self::class . '.NO_OWNER', 'No owner found');
         }
 
         $descriptions = array_map(
-            fn (array $entry) => $this->describeOwner($entry['owner'], $entry['relation']),
+            fn (array $entry): string => $this->describeOwner($entry['owner'], $entry['relation']),
             $owners
         );
 
@@ -79,7 +79,7 @@ class GridFieldLinkOwnerColumn extends AbstractGridFieldComponent implements Gri
         );
 
         if ($owner->hasMethod('CMSEditLink')) {
-            $url = $owner->CMSEditLink();
+            $url = $owner->getCMSEditLink();
             if ($url) {
                 return sprintf('<a href="%s">%s</a>', htmlspecialchars($url), htmlspecialchars($label));
             }
