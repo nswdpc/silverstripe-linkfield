@@ -214,11 +214,15 @@ class LinkMigrator
     protected function getTargetRelation(DataObject $owner, string $relation): ?string
     {
         foreach ((array) static::config()->get('relation_map') as $class => $map) {
+            if(!is_string($class) || !class_exists($class) || !is_array($map)) {
+                continue;
+            }
+
             if (!$owner instanceof $class) {
                 continue;
             }
 
-            if (array_key_exists($relation, (array) $map)) {
+            if (array_key_exists($relation, $map)) {
                 return (string) $map[$relation];
             }
         }
