@@ -404,3 +404,15 @@ genuinely relying on gorriecoe's `Link` via a real `has_many` (with its own `Sor
 - Nothing should migrate unless a relation is explicitly present in `LinkMigrator::$relation_map` - default
   behaviour is byte-for-byte identical to today for anything not mapped, and this module never touches the old
   relation's own column/data regardless of migration state.
+
+## Lifecycle
+
+The intended lifecycle of this migration is as follows:
+
+1. Projects and modules wishing to migration Link records install this module at the relevant tag
+2. They configure their links for migration via `relation_map`, the field usage and custom getter handling
+3. This change is deployed and configured links are migrated
+4. Once migration is complete:
+    1. Remove references to this module's Link and LinkField in code, including relations
+    2. Remove migration configuration
+    3. Optionally remove this module and optionally `nswdpc/silverstripe-link` as a requirement in project/module. If the modules are removed, complete obsolete database table cleanup (for Link table).
