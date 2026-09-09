@@ -33,7 +33,7 @@ class MigratedLinkStyleExtension extends Extension
     public function updateCmsFields(FieldList $fields)
     {
         $selectedStyleField = $fields->dataFieldByName('SelectedStyle');
-        if($selectedStyleField) {
+        if ($selectedStyleField) {
             $fields->insertAfter(
                 'OpenInNewWindow',
                 $selectedStyleField->setTitle(

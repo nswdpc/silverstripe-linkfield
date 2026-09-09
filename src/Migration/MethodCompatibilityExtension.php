@@ -32,7 +32,7 @@ class MethodCompatibilityExtension extends Extension
      */
     public function getFormattedPhoneLink(): ?string
     {
-        if($this->getOwner() instanceof PhoneLink) {
+        if ($this->getOwner() instanceof PhoneLink) {
             return $this->getOwner()->getURL();
         }
 
