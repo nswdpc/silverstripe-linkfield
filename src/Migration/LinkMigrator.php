@@ -61,6 +61,7 @@ use SilverStripe\Versioned\Versioned;
  * keeps working unchanged for every owner indefinitely.
  *
  * @mixin \gorriecoe\LinkField\Migration\LinkMigratorStyleExtension
+ * @mixin \gorriecoe\LinkField\Migration\LinkMigratorSortExtension
  */
 class LinkMigrator
 {

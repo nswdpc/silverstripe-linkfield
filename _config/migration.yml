@@ -21,7 +21,15 @@ SilverStripe\LinkField\Models\Link:
 # added pointing at core's Link class. See
 # gorriecoe\LinkField\Migration\LinkMigrator::$relation_map and
 # docs/en/migration.md for a full worked example.
+#
+# LinkMigratorSortExtension carries gorriecoe's documented many_many
+# 'Sort' extra field forward onto migrated core Links, so a many_many
+# relation's original ordering survives per-record migration instead of
+# falling back to migration order. Assumes the literal column name 'Sort'
+# (gorriecoe's own convention) - remove this via config and add your own
+# extension instead if your project uses a different sort column name.
 gorriecoe\LinkField\Migration\LinkMigrator:
   extensions:
     LinkMigratorStyleExtension: gorriecoe\LinkField\Migration\LinkMigratorStyleExtension
+    LinkMigratorSortExtension: gorriecoe\LinkField\Migration\LinkMigratorSortExtension
   relation_map: []

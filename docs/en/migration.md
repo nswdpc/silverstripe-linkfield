@@ -72,6 +72,11 @@ change rendering, does not add any CMS-field delegation, and does not know or ca
   old table/rows.
 - `LinkMigrationAdmin` (a `ModelAdmin`) plus `GridFieldMigrateLinkButton` / `GridFieldMigrateAllLinksButton`, for
   tracking migration status and triggering per-row or bulk migration from the CMS.
+- Two ready-made `LinkMigrator` extensions hooking the generic `updateMigratedLink` extend point (see "Carrying
+  custom/extra fields forward" below) to handle gorriecoe's own documented optional fields: `LinkMigratorStyleExtension`
+  (copies `SelectedStyle`, paired with `MigratedLinkStyleExtension` which adds the matching field to core's
+  `Link`) and `LinkMigratorSortExtension` (copies the `Sort` many_many extra field for a migrated many_many/
+  belongs_many_many relation, so original ordering survives migration). Both are removable via config if unused.
 
 It's entirely up to each project or module to decide *when* and *whether* to add the new relation, write its own
 fallback getter(s) and template updates, and configure `LinkMigrator::$relation_map` to enable migration for that
@@ -378,6 +383,60 @@ built entirely around `many_many` (see finding 2 above — gorriecoe's `Link` ha
 genuinely relying on gorriecoe's `Link` via a real `has_many` (with its own `Sort` field) can opt in by adding
 `has_many` to `LinkMigrator::$eligible_relation_types` via config and following the many_many pattern above.
 
+## Carrying custom/extra fields forward
+
+`LinkMigrator::createMigratedLink()` calls `$this->extend('updateMigratedLink', $newLink, $link)` after mapping
+the type-specific fields, but before writing the new Link - a plain `Extensible` hook any number of `LinkMigrator`
+extensions can implement to copy additional data across, with full access to both records. This is deliberately
+how gorriecoe's own optional fields are handled rather than being special-cased inside `LinkMigrator` itself -
+there is no generic way to discover an arbitrary extra field and its intended target name, so the mapping is
+always supplied by whichever extension needs it:
+
+- **`SelectedStyle`** has no equivalent anywhere in core's Link model. `MigratedLinkStyleExtension` (applied to
+  core's `Link`) adds a `SelectedStyle` field; `LinkMigratorStyleExtension` (applied to `LinkMigrator`) copies
+  the value across. Remove both via config if your project doesn't use `SelectedStyle`.
+- **`Sort`**, for a migrated `many_many`/`belongs_many_many` relation, lives in the join table
+  (`many_many_extraFields`), not on `Link` itself - see "Resolved decisions" above. `LinkMigratorSortExtension`
+  re-derives the Link's current owner+relation via `LinkOwnerLocator` (the hook itself only receives
+  `$newLink`/`$oldLink`, not owner/relation context - by the time it runs, `LinkMigrator::migrate()`'s own
+  sole-ownership check guarantees exactly one owner+relation exists for it to find), reads the extra field
+  value via `ManyManyList::getExtraData()`, and sets it onto core Link's native `Sort` field. This assumes the
+  literal column name `'Sort'` - gorriecoe's own documented convention, and the default of this module's own
+  `LinkField::$sort_column`. **If your project uses a different sort column name** (e.g. `SortOrder`), remove
+  `LinkMigratorSortExtension` via config and add your own extension following the same pattern, reading your
+  own column name instead.
+
+A third-party module adding its own fields to gorriecoe's `Link` (e.g. an `Image` has_one + a `Description`
+text field) follows exactly the same two-extension pattern, entirely in its own codebase - no change to this
+module is needed:
+
+```php
+// Applied to SilverStripe\LinkField\Models\Link - adds the target fields.
+class MigratedLinkMediaExtension extends Extension
+{
+    private static array $has_one = ['LinkImage' => Image::class];
+    private static array $db = ['LinkDescription' => 'Text'];
+}
+
+// Applied to gorriecoe\LinkField\Migration\LinkMigrator - copies the values.
+class LinkMigratorMediaExtension extends Extension
+{
+    public function updateMigratedLink(CoreLink $newLink, OldLink $oldLink): void
+    {
+        if ($newLink->hasField('LinkImageID')) {
+            $newLink->LinkImageID = $oldLink->ImageID;
+        }
+        if ($newLink->hasField('LinkDescription')) {
+            $newLink->LinkDescription = $oldLink->Description;
+        }
+    }
+}
+```
+
+Copying `ImageID` as a raw foreign-key assignment (rather than loading and re-saving the `Image` record) mirrors
+how `FileLink::FileID`/`SiteTreeLink::PageID` are already mapped in `LinkMigrator::createMigratedLink()` - it
+just repoints the reference, without touching or re-versioning the referenced record itself.
+
 ## Deliverables
 
 - [x] `LinkMigrationExtension` + `LinkMigrator` service + `ModelAdmin` (`LinkMigrationAdmin`), with the
@@ -388,11 +447,13 @@ genuinely relying on gorriecoe's `Link` via a real `has_many` (with its own `Sor
   cleared), correct field mapping per link type including `SiteTree` (both anchor and querystring forms),
   many_many migration when singly-owned, many_many refusal when genuinely shared (and `LinkOwnerLocator`
   correctly finding both owners in that case), refusal when a Link isn't actually attached to the given
-  owner+relation at all, `SelectedStyle` carry-forward, correct `OwnerRelation` naming (and that core's own
-  `Link::Owner()` resolves correctly as a result), refusing migration with no/misconfigured `$relation_map`
-  entry, and the ModelAdmin's per-row migrate action (including refusing an ambiguous/multi-owner row and a
-  not-yet-enabled relation). All 20 tests pass; verified with `vendor/bin/phpunit`, `phpstan`, and
-  `php-cs-fixer` against this repo's own CI configs (see `composer.json` scripts).
+  owner+relation at all, `SelectedStyle` carry-forward, the many_many `Sort` extra field carrying forward onto
+  core Link's native `Sort` field, has_one migration being unaffected by the Sort extension, correct
+  `OwnerRelation` naming (and that core's own `Link::Owner()` resolves correctly as a result), refusing
+  migration with no/misconfigured `$relation_map` entry, and the ModelAdmin's per-row migrate action (including
+  refusing an ambiguous/multi-owner row and a not-yet-enabled relation). All tests pass; verified with
+  `vendor/bin/phpunit`, `phpstan`, and `php-cs-fixer` against this repo's own CI configs (see `composer.json`
+  scripts).
 - [x] Worked examples above for both a has_one and a many_many relation, plus an explicit account of why plain
   has_many (as an *old* relation type) is out of scope by default.
 

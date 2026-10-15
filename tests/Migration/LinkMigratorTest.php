@@ -293,6 +293,42 @@ class LinkMigratorTest extends SapphireTest
         $this->assertTrue($owner->Buttons()->filter('ID', $oldLink->ID)->exists());
     }
 
+    public function testManyManySortExtraFieldIsCarriedForwardWhenExtensionApplied(): void
+    {
+        $owner = MigrationTestOwner::create();
+        $owner->write();
+
+        $oldLink = OldLink::create(['Type' => 'URL', 'URL' => 'https://example.com']);
+        $oldLink->write();
+        // A deliberately non-default value: core's own Link::onBeforeWrite()
+        // would assign Sort = 1 for the first Link on a fresh relation
+        // anyway, which would make a test using Sort => 1 pass even if this
+        // extension silently did nothing.
+        $owner->Buttons()->add($oldLink, ['Sort' => 7]);
+
+        $newLink = $this->migrator->migrate($oldLink, $owner, 'Buttons');
+
+        $this->assertSame(7, $newLink->Sort);
+    }
+
+    public function testHasOneMigrationIsUnaffectedBySortExtension(): void
+    {
+        $owner = MigrationTestOwner::create();
+        $owner->write();
+
+        $oldLink = OldLink::create(['Type' => 'URL', 'URL' => 'https://example.com']);
+        $oldLink->write();
+        $owner->ButtonID = $oldLink->ID;
+        $owner->write();
+
+        // has_one carries no Sort concept at all - this must not error, and
+        // Sort is simply left for core's own default (max+1, which for a
+        // fresh Owner+OwnerRelation is 1).
+        $newLink = $this->migrator->migrate($oldLink, $owner, 'Button');
+
+        $this->assertSame(1, $newLink->Sort);
+    }
+
     public function testGenuinelySharedManyManyLinkIsRefused(): void
     {
         $ownerA = MigrationTestOwner::create();

@@ -46,6 +46,6 @@ class MigratedLinkStyleExtension extends Extension
 
     public function getSelectedStyle()
     {
-        return Convert::raw2htmlatt(trim($this->getOwner()->SelectedStyle ?? ''));
+        return Convert::raw2htmlatt(trim($this->getOwner()->getField('SelectedStyle') ?? ''));
     }
 }
