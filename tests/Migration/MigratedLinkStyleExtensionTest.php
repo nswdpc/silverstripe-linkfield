@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace gorriecoe\LinkField\Tests\Migration;
 
 use SilverStripe\Core\Config\Config;

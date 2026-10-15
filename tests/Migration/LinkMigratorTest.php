@@ -318,6 +318,7 @@ class LinkMigratorTest extends SapphireTest
 
         $oldLink = OldLink::create(['Type' => 'URL', 'URL' => 'https://example.com']);
         $oldLink->write();
+
         $owner->ButtonID = $oldLink->ID;
         $owner->write();
 
@@ -378,6 +379,7 @@ class LinkMigratorTest extends SapphireTest
             'SelectedStyle' => 'primary',
         ]);
         $oldLink->write();
+
         $owner->ButtonID = $oldLink->ID;
         $owner->write();
 
