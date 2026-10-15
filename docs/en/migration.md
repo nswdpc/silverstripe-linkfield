@@ -74,9 +74,12 @@ change rendering, does not add any CMS-field delegation, and does not know or ca
   tracking migration status and triggering per-row or bulk migration from the CMS.
 - Two ready-made `LinkMigrator` extensions hooking the generic `updateMigratedLink` extend point (see "Carrying
   custom/extra fields forward" below) to handle gorriecoe's own documented optional fields: `LinkMigratorStyleExtension`
-  (copies `SelectedStyle`, paired with `MigratedLinkStyleExtension` which adds the matching field to core's
-  `Link`) and `LinkMigratorSortExtension` (copies the `Sort` many_many extra field for a migrated many_many/
-  belongs_many_many relation, so original ordering survives migration). Both are removable via config if unused.
+  (copies `SelectedStyle`, paired with `MigratedLinkStyleExtension`, which adds the matching field to core's
+  `Link` - the db column and copy are always active while the extension is applied; whether it's shown in the
+  CMS is a separate, off-by-default toggle, `SilverStripe\LinkField\Models\Link::$selectedstyle_field_enabled`)
+  and `LinkMigratorSortExtension`
+  (copies the `Sort` many_many extra field for a migrated many_many/belongs_many_many relation, so original
+  ordering survives migration).
 
 It's entirely up to each project or module to decide *when* and *whether* to add the new relation, write its own
 fallback getter(s) and template updates, and configure `LinkMigrator::$relation_map` to enable migration for that
@@ -106,9 +109,11 @@ All five original "unresolved facts" below were investigated directly against th
 3. **`SelectedStyle` field has no equivalent in core's Link model. → Decision: carry forward via extension.**
    Confirmed by reading the full core `Models/Link.php` and every subclass — no equivalent field exists
    anywhere in core. Per decision, `SelectedStyle` is carried forward: `MigratedLinkStyleExtension`
-   adds a `SelectedStyle` field to core's `Link` (config-applied, removable per-project if unused), and
-   `LinkMigratorStyleExtension` (applied to `LinkMigrator`) copies the value across during migration via the
-   `updateMigratedLink` extend hook.
+   adds a `SelectedStyle` field to core's `Link`, and `LinkMigratorStyleExtension` (applied to `LinkMigrator`)
+   copies the value across during migration via the `updateMigratedLink` extend hook - both unconditional
+   whenever `MigratedLinkStyleExtension` is applied. Whether the field is actually shown in the CMS is a
+   separate concern, controlled by `SilverStripe\LinkField\Models\Link::$selectedstyle_field_enabled`
+   (defaulting to `false`) - see "Carrying custom/extra fields forward" below.
 
 4. **`SiteTree` type handling.**
    The `LinkSiteTree` extension (`gorriecoe\Link\Extensions\LinkSiteTree`) adds `SiteTreeID` has_one + `Anchor`
@@ -393,8 +398,26 @@ there is no generic way to discover an arbitrary extra field and its intended ta
 always supplied by whichever extension needs it:
 
 - **`SelectedStyle`** has no equivalent anywhere in core's Link model. `MigratedLinkStyleExtension` (applied to
-  core's `Link`) adds a `SelectedStyle` field; `LinkMigratorStyleExtension` (applied to `LinkMigrator`) copies
-  the value across. Remove both via config if your project doesn't use `SelectedStyle`.
+  core's `Link`) adds a `SelectedStyle` db field; `LinkMigratorStyleExtension` (applied to `LinkMigrator`)
+  copies the value across. Both are unconditional whenever `MigratedLinkStyleExtension` is applied - a project
+  that doesn't use `SelectedStyle` at all should remove the extension entirely via config:
+
+  ```yaml
+  SilverStripe\LinkField\Models\Link:
+    extensions:
+      MigratedLinkStyleExtension: null
+  ```
+
+  Separately, whether the field actually *shows up in the CMS* is controlled by a
+  `selectedstyle_field_enabled` config value, read from the owner class
+  (`SilverStripe\LinkField\Models\Link`) inside `MigratedLinkStyleExtension::updateCmsFields()` - this only
+  hides/shows the form field, the db column and migration copy happen regardless. Defaults to `false`; a
+  project that wants CMS users to see and edit it should turn this on explicitly:
+
+  ```yaml
+  SilverStripe\LinkField\Models\Link:
+    selectedstyle_field_enabled: true
+  ```
 - **`Sort`**, for a migrated `many_many`/`belongs_many_many` relation, lives in the join table
   (`many_many_extraFields`), not on `Link` itself - see "Resolved decisions" above. `LinkMigratorSortExtension`
   re-derives the Link's current owner+relation via `LinkOwnerLocator` (the hook itself only receives
@@ -447,13 +470,14 @@ just repoints the reference, without touching or re-versioning the referenced re
   cleared), correct field mapping per link type including `SiteTree` (both anchor and querystring forms),
   many_many migration when singly-owned, many_many refusal when genuinely shared (and `LinkOwnerLocator`
   correctly finding both owners in that case), refusal when a Link isn't actually attached to the given
-  owner+relation at all, `SelectedStyle` carry-forward, the many_many `Sort` extra field carrying forward onto
-  core Link's native `Sort` field, has_one migration being unaffected by the Sort extension, correct
-  `OwnerRelation` naming (and that core's own `Link::Owner()` resolves correctly as a result), refusing
-  migration with no/misconfigured `$relation_map` entry, and the ModelAdmin's per-row migrate action (including
-  refusing an ambiguous/multi-owner row and a not-yet-enabled relation). All tests pass; verified with
-  `vendor/bin/phpunit`, `phpstan`, and `php-cs-fixer` against this repo's own CI configs (see `composer.json`
-  scripts).
+  owner+relation at all, `SelectedStyle` always carrying forward during migration, `selectedstyle_field_enabled`
+  hiding/showing the CMS field (defaulting to hidden) without affecting that copy, the many_many `Sort` extra
+  field carrying forward onto core Link's native `Sort` field, has_one migration being unaffected by the Sort
+  extension, correct `OwnerRelation` naming (and that core's own
+  `Link::Owner()` resolves correctly as a result), refusing migration with no/misconfigured `$relation_map`
+  entry, and the ModelAdmin's per-row migrate action (including refusing an ambiguous/multi-owner row and a
+  not-yet-enabled relation). All tests pass; verified with `vendor/bin/phpunit`, `phpstan`, and `php-cs-fixer`
+  against this repo's own CI configs (see `composer.json` scripts).
 - [x] Worked examples above for both a has_one and a many_many relation, plus an explicit account of why plain
   has_many (as an *old* relation type) is out of scope by default.
 

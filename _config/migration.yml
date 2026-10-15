@@ -8,13 +8,18 @@ gorriecoe\Link\Models\Link:
     LinkMigrationExtension: gorriecoe\LinkField\Migration\LinkMigrationExtension
 
 # Carries gorriecoe's SelectedStyle field forward onto migrated core Links,
-# since core's Link model has no equivalent field. Remove this (and the
-# LinkMigratorStyleExtension below) via project config if you don't use
-# SelectedStyle and don't want the extra column on core's Link table.
+# since core's Link model has no equivalent field. The db column and the
+# migration copy are always active while this extension is applied - remove
+# the extension entirely via config if a project doesn't use SelectedStyle
+# at all. selectedstyle_field_enabled only controls whether the field is
+# shown in the CMS; default false hides it even though the column/copy
+# still happen. Set SilverStripe\LinkField\Models\Link: selectedstyle_field_enabled: true
+# to show it.
 SilverStripe\LinkField\Models\Link:
   extensions:
     MigratedLinkStyleExtension: gorriecoe\LinkField\Migration\MigratedLinkStyleExtension
     MethodCompatibilityExtension: gorriecoe\LinkField\Migration\MethodCompatibilityExtension
+  selectedstyle_field_enabled: false
 
 # Nothing actually migrates from here: a project must explicitly map each
 # old relation it wants migrated to a new, dedicated has_one relation it has

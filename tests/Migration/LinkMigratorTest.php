@@ -367,7 +367,7 @@ class LinkMigratorTest extends SapphireTest
         $this->migrator->migrate($oldLink, $owner, 'Button');
     }
 
-    public function testSelectedStyleIsCarriedForwardWhenExtensionApplied(): void
+    public function testSelectedStyleIsCarriedForwardDuringMigration(): void
     {
         $owner = MigrationTestOwner::create();
         $owner->write();
@@ -378,16 +378,11 @@ class LinkMigratorTest extends SapphireTest
             'SelectedStyle' => 'primary',
         ]);
         $oldLink->write();
-
         $owner->ButtonID = $oldLink->ID;
         $owner->write();
 
         $newLink = $this->migrator->migrate($oldLink, $owner, 'Button');
 
-        if ($newLink->hasField('SelectedStyle')) {
-            $this->assertSame('primary', $newLink->SelectedStyle);
-        } else {
-            $this->markTestSkipped('MigratedLinkStyleExtension is not applied in this environment');
-        }
+        $this->assertSame('primary', $newLink->SelectedStyle);
     }
 }
