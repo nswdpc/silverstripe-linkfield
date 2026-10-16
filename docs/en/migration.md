@@ -19,8 +19,8 @@ all-or-nothing behaviour we're trying to avoid).
 ## How to migrate
 
 **The chosen design instead uses two independent, permanently-separate relations.** A project adds a brand new
-has_one relation on the owning class (e.g. `CoreButton` alongside an existing `Button`) that has *always*
-points at core's `SilverStripe\LinkField\Models\Link`, and a small getter (e.g. `getButton()`) that returns the
+has_one relation on the owning class (e.g. `CoreButton` alongside an existing `Button`) that *always*
+points at core's `SilverStripe\LinkField\Models\Link`, and a small getter (e.g. `getDerivedButton()`) that returns the
 migrated Link if one exists, falling back to the old relation otherwise.
 
 The old relation, its column, and its data are never touched. This module's job shrinks to exactly what it should be: locate the old Link's owner, create/map the equivalent core Link, and point the *new* dedicated relation at it — nothing shared, nothing to repoint, nothing that can collide.
@@ -151,14 +151,19 @@ All five original "unresolved facts" below were investigated directly against th
 
 ### Worked example: migrating a has_one relation
 
-Say `MyPage` currently has:
+> Links could be applied in an Extension, use `$owner`/`$this->getOwner()` to return the Link instances in this case. e.g. `$this->getOwner()->Button()`.
+
+Say `\MyApp\MyPage` currently has:
 
 ```php
+<?php
+
+namespace MyApp;
 
 use gorriecoe\Link\Models\Link;
 use gorriecoe\LinkField\LinkField;
 
-class MyPage extends Page
+class MyPage extends \Page
 {
     private static array $has_one = [
         'Button' => \gorriecoe\Link\Models\Link::class,
@@ -178,16 +183,30 @@ class MyPage extends Page
 > In this example the new relation(s) are prefixed "Core". You can used any prefix but you must update wherever the relation is used to reference the updated prefix. The chosen name will be retained post-migration.
 
 ```php
+<?php
+
+namespace MyApp;
+
 use gorriecoe\Link\Models\Link;
 use gorriecoe\LinkField\LinkField;
 use SilverStripe\LinkField\Models\Link as CoreLink;
 use SilverStripe\LinkField\Form\LinkField as CoreLinkField;
 
-class MyPage extends Page
+class MyPage extends \Page
 {
     private static array $has_one = [
         'Button' => Link::class,
         'CoreButton' => CoreLink::class, // you can name this relation anything, update usage if so
+    ];
+
+    private static array $owns = ['CoreButton'];
+
+    private static array $cascade_deletes = [
+        'CoreButton'
+    ];
+
+    private static array $cascade_duplicates = [
+        'CoreButton'
     ];
 
     public function getCMSFields()
@@ -195,7 +214,7 @@ class MyPage extends Page
         $fields = parent::getCMSFields();
         // Display field based on which link class is returned
         // If the core button is populated before a migration takes place, this will be preferred
-        $button = $this->getButton();
+        $button = $this->getDerivedButton();
         if($button instanceof CoreLink) {
             $linkField = CoreLinkField::create('CoreButton', 'Button');
         } else {
@@ -209,35 +228,57 @@ class MyPage extends Page
     }
 
     /**
+     * Template entry point
+     */
+    public function DerivedButton(): CoreLink|Link
+    {
+        return $this->getDerivedButton();
+    }
+
+    /**
      * Returns the migrated core Link if one exists, falling back to the
      * legacy gorriecoe Link otherwise. Use this (not Button()/ButtonID)
      * anywhere the link is consumed - templates, controllers, other modules.
      */
-    public function getButton(): null|CoreLink|Link
+    public function getDerivedButton(): CoreLink|Link
     {
-        $coreButton = $this->CoreButton();
-        if($coreButton && $coreButton->isInDB()) {
-            return $coreButton;
+        $coreLink = $this->CoreButton();
+        /** @var Link $legacyLink */
+        $legacyLink = $this->getComponent('Button');
+        // Return the new link either when it exists or when the legacy link does not exist (new instances)
+        if($coreLink->isInDB() || !$legacyLink->isInDB()) {
+            return $coreLink;
         }
-        return $this->getComponent('Button');
+        return $legacyLink;
     }
 }
 ```
 
-Update the template from `$Button` to `$Button` via the getter (SilverStripe resolves `$Button` to
-`getButton()` automatically ahead of the `Button` has_one accessor), or call `$Button` explicitly if the
-template already used a different name.
+#### Usage
+
+> Get these changes in place before migration is enabled in the `relation_map` config below.
+
+**Templates**: Update from `$Button` to `$DerivedButton`
+
+**Code**: calling `->Button()` will return the legacy link, calling `->CoreButton()` will return the new core link. Call `->getDerivedButton()` to return the link based on migration state.
+
+Review the `MethodCompatibility` extension class for compatible methods e.g. calling getLinkURL()/$LinkURL on the new model will proxy to `$this->getOwner()->getURL()` which will return the URL.
 
 **Step 2 — enable migration for this relation:**
 
 ```yaml
+---
+Name: myapp-linkmigration
+Only:
+  classexists: 'gorriecoe\LinkField\Migration\LinkMigrator'
+---
 gorriecoe\LinkField\Migration\LinkMigrator:
   relation_map:
-    MyPage:
+    MyApp\MyPage:
       Button: CoreButton
 ```
 
-**Step 3 — migrate records**, per-row or in bulk, from the `LinkMigrationAdmin` CMS section (`/admin/link-migration`),
+**Step 3 — migrate records**, per-row or in bulk, from the `Link migration` admin section (`/admin/link-migration`),
 at any pace, with no deploy-timing dependency on steps 1-2 having "just happened" — they can already be live for
 some time before any records are migrated, or migration can start immediately after deploy.
 
@@ -247,7 +288,7 @@ haven't been migrated yet.
 
 ### Worked example: migrating a many_many relation
 
-> The migration does not support `gorriecoe\Link\Models\Link` records in a has_many relation as this is specifically not recommended in usage documentation. 
+> The migration does not support `gorriecoe\Link\Models\Link` records in a `has_many` relation as this is specifically not recommended in usage documentation. 
 
 Core has no `many_many`/`belongs_many_many` concept for Link at all - its "many" pattern is a `has_many` using
 its own `Owner` dot-relation, scaffolded via `Link::scaffoldFormFieldForHasMany()` as `MultiLinkField`. So a
@@ -255,10 +296,13 @@ migrated `many_many` relation maps onto that has_many/`MultiLinkField` shape, pe
 relation maps onto a `has_one`/`LinkField`. Say `MyPage` currently has:
 
 ```php
+<?php
+
+namespace MyApp;
 
 use gorriecoe\Link\Models\Link;
 
-class MyPage extends Page
+class MyPage extends \Page
 {
     private static array $many_many = [
         'Buttons' => \gorriecoe\Link\Models\Link::class,
@@ -272,22 +316,39 @@ class MyPage extends Page
 **Step 1 — add the new, dedicated has_many relation and a merging getter:**
 
 ```php
+<?php
+
+namespace MyApp;
 
 use gorriecoe\Link\Models\Link;
 use gorriecoe\LinkField\LinkField;
 use SilverStripe\LinkField\Models\Link as CoreLink;
 use SilverStripe\LinkField\Form\MultiLinkField as CoreMultiLinkField;
 
-class MyPage extends Page
+class MyPage extends \Page
 {
     private static array $many_many = [
         'Buttons' => Link::class,
     ];
+    
     private static array $many_many_extraFields = [
         'Buttons' => ['Sort' => 'Int'],
     ];
+    
     private static array $has_many = [
         'CoreButtons' => CoreLink::class . '.Owner',
+    ];
+
+    private static array $owns = [
+        'CoreButtons'
+    ];
+
+    private static array $cascade_deletes = [
+        'CoreButtons',
+    ];
+
+    private static array $cascade_duplicates = [
+        'CoreButtons',
     ];
 
     public function getCMSFields()
@@ -326,6 +387,14 @@ class MyPage extends Page
     }
 
     /**
+     * Template method for getButtonsLinkList()
+     */
+    public function ButtonsLinkList(): \SilverStripe\Model\List\SS_List
+    {
+        return $this->getButtonsLinkList();
+    }
+
+    /**
      * Migrated old rows are replaced by their core equivalent, in the
      * original sort order; not-yet-migrated old rows keep appearing as-is,
      * since a many_many relation's rows migrate one at a time rather than
@@ -334,7 +403,7 @@ class MyPage extends Page
      * modules.
      * Each record in the ArrayList will either be a Link or CoreLink record
      */
-    public function getButtons(): \SilverStripe\Model\List\SS_List
+    public function getButtonsLinkList(): \SilverStripe\Model\List\SS_List
     {
 
         $coreButtons = $this->CoreButtons()->sort(['Sort' => 'ASC']);
@@ -364,12 +433,27 @@ class MyPage extends Page
 Core's `Link` has a native `Sort` field, so `CoreButtons`/`MultiLinkField`'s ordering works out of the box - no
 need to reproduce gorriecoe's `many_many_extraFields` `Sort` column for the new relation.
 
+#### Usage
+
+> Get these changes in place before migration is enabled in the `relation_map` config below.
+
+**Templates**: Update from `$Buttons` to `$ButtonsLinkList`
+
+**Code**: calling `->Buttons()` will return the legacy link, calling `->CoreButtons()` will return the new core link. Call `->getButtonsLinkList()` to return the links based on migration state.
+
+If you are templating each link returned, review the `MethodCompatibility` extension class for compatible methods e.g. calling getLinkURL()/$LinkURL on the new model will proxy to `$this->getOwner()->getURL()` which will return the URL.
+
 **Step 2 — enable migration for this relation:**
 
 ```yaml
+---
+Name: myapp-linkmigration
+Only:
+  classexists: 'gorriecoe\LinkField\Migration\LinkMigrator'
+---
 gorriecoe\LinkField\Migration\LinkMigrator:
   relation_map:
-    MyPage:
+    MyApp\MyPage:
       Buttons: CoreButtons
 ```
 
@@ -434,13 +518,18 @@ text field) follows exactly the same two-extension pattern, entirely in its own 
 module is needed:
 
 ```php
+<?php
+
 // Applied to SilverStripe\LinkField\Models\Link - adds the target fields.
 class MigratedLinkMediaExtension extends Extension
 {
     private static array $has_one = ['LinkImage' => Image::class];
     private static array $db = ['LinkDescription' => 'Text'];
 }
+```
 
+```php
+<?php
 // Applied to gorriecoe\LinkField\Migration\LinkMigrator - copies the values.
 class LinkMigratorMediaExtension extends Extension
 {
@@ -506,7 +595,7 @@ The intended lifecycle of this migration is as follows:
 
 ### Example code post-migration
 
-> Note that the new relation names are used.
+Once migration is complete each module/project can be incrementally updated to point at the core link models only.
 
 ```php
 <?php
@@ -530,7 +619,7 @@ The intended lifecycle of this migration is as follows:
     /**
      * Return the new link relation
      */
-    public function getButton(): ?CoreLink
+    public function getDerivedButton(): ?CoreLink
     {
         return $this->CoreButton();
     }
