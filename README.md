@@ -1,27 +1,33 @@
 # Note
 
-This is a fork of `gorriecoe/silverstripe-linkfield`.
+This is a fork of [gorriecoe/silverstripe-linkfield](https://github.com/elliot-sawyer/silverstripe-linkfield).
 
-The intent of this fork is to provide a migration path to silverstripe/link.
-
+The intent of this fork is to provide a migration path to [silverstripe/linkfield](https://github.com/silverstripe/silverstripe-linkfield).
 
 ## Installation
 
-Composer is the recommended way of installing SilverStripe modules.
+Use composer:
 
-```
-composer require nswdpc/silverstripe-linkfield
+```sh
+composer require nswdpc/silverstripe-linkfield:^2
 ```
 
 ## Requirements
 
+- silverstripe/framework (^6)
 - nswdpc/silverstripe-link
-
-## Screenshots
-
-![Link list](docs/_img/list.png)
-![Detail edit form](docs/_img/edit.png)
+- silverstripe/linkfield
 
 ## Usage
 
-See [usage](./docs/en/usage.md).
++ See [usage](./docs/en/usage.md).
+
+## Migration
+
+This fork supports a staged migration of links to the Silverstripe Link model via a project configuration.
+
++ See [migration](./docs/en/migration.md).
+
+## License
+
+BSD-3, see [LICENSE](./LICENSE.md).
