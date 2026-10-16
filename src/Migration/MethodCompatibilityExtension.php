@@ -38,4 +38,20 @@ class MethodCompatibilityExtension extends Extension
 
         return null;
     }
+
+    /**
+     * Template method for getOpenInNewWindow()
+     */
+    public function OpenInNewWindow()
+    {
+        return $this->getOpenInNewWindow();
+    }
+
+    /**
+     * Provides a compatibility method for returning OpenInNew when $OpenInNewWindow is called from templates
+     */
+    public function getOpenInNewWindow()
+    {
+        return $this->getOwner()->OpenInNew;
+    }
 }
