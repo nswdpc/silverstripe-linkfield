@@ -7,6 +7,7 @@ use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\LinkField\Models\Link as CoreLink;
 use SilverStripe\ORM\Filters\ExactMatchFilter;
+use SilverStripe\Security\Permission;
 
 /**
  * Applied to gorriecoe\Link\Models\Link. Tracks whether an old Link record has
@@ -43,12 +44,15 @@ class LinkMigrationExtension extends Extension
 
     public function updateCmsFields(FieldList $fields)
     {
-        $fields->addFieldToTab(
-            'Root.Main',
-            CheckboxField::create(
-                'IsMigrated',
-                _t('linkfield.IS_MIGRATED_FIELD_TITLE', 'Migrated to core link?')
-            )
-        );
+        $fields->removeByName(['IsMigrated']);
+        if (Permission::check('ADMIN')) {
+            $fields->insertAfter(
+                'Title',
+                CheckboxField::create(
+                    'IsMigrated',
+                    _t('linkfield.IS_MIGRATED_FIELD_TITLE', 'Link migrated?')
+                )->performReadonlyTransformation()
+            );
+        }
     }
 }
