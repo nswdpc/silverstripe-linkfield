@@ -1,0 +1,40 @@
+---
+Name: linkfieldmigration
+---
+# Adds IsMigrated/MigratedLink tracking to the old gorriecoe Link model.
+# Purely additive - existing columns/behaviour are untouched.
+gorriecoe\Link\Models\Link:
+  extensions:
+    LinkMigrationExtension: gorriecoe\LinkField\Migration\LinkMigrationExtension
+
+# Carries gorriecoe's SelectedStyle field forward onto migrated core Links,
+# since core's Link model has no equivalent field. The db column and the
+# migration copy are always active while this extension is applied - remove
+# the extension entirely via config if a project doesn't use SelectedStyle
+# at all. selectedstyle_field_enabled only controls whether the field is
+# shown in the CMS; default false hides it even though the column/copy
+# still happen. Set SilverStripe\LinkField\Models\Link: selectedstyle_field_enabled: true
+# to show it.
+SilverStripe\LinkField\Models\Link:
+  extensions:
+    MigratedLinkStyleExtension: gorriecoe\LinkField\Migration\MigratedLinkStyleExtension
+    MethodCompatibilityExtension: gorriecoe\LinkField\Migration\MethodCompatibilityExtension
+  selectedstyle_field_enabled: false
+
+# Nothing actually migrates from here: a project must explicitly map each
+# old relation it wants migrated to a new, dedicated has_one relation it has
+# added pointing at core's Link class. See
+# gorriecoe\LinkField\Migration\LinkMigrator::$relation_map and
+# docs/en/migration.md for a full worked example.
+#
+# LinkMigratorSortExtension carries gorriecoe's documented many_many
+# 'Sort' extra field forward onto migrated core Links, so a many_many
+# relation's original ordering survives per-record migration instead of
+# falling back to migration order. Assumes the literal column name 'Sort'
+# (gorriecoe's own convention) - remove this via config and add your own
+# extension instead if your project uses a different sort column name.
+gorriecoe\LinkField\Migration\LinkMigrator:
+  extensions:
+    LinkMigratorStyleExtension: gorriecoe\LinkField\Migration\LinkMigratorStyleExtension
+    LinkMigratorSortExtension: gorriecoe\LinkField\Migration\LinkMigratorSortExtension
+  relation_map: []

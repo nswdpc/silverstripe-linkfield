@@ -17,3 +17,5 @@ vendor
 /vendor/
 /public/
 /.php-cs-fixer.cache
+/app/
+/.phpunit.result.cache
