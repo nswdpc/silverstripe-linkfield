@@ -9,14 +9,12 @@ The intent of this fork is to provide a migration path to [silverstripe/linkfiel
 Use composer:
 
 ```sh
-composer require nswdpc/silverstripe-linkfield:^2
+composer require nswdpc/silverstripe-linkfield:^2.1
 ```
 
 ## Requirements
 
-- silverstripe/framework (^6)
-- nswdpc/silverstripe-link
-- silverstripe/linkfield
+See composer.json
 
 ## Usage
 
